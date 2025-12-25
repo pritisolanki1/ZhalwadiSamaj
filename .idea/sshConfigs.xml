@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SshConfigs">
+    <configs>
+      <sshConfig connectionConfig="{&quot;serverAliveInterval&quot;:300}" host="ubuntu@ec2-43-205-96-60.ap-south-1.compute.amazonaws.com" id="140059d4-b131-46d6-9a45-d90c7ba72cf0" keyPath="$USER_HOME$/Downloads/ggohilbbhavik.pem" port="22" customName="Parivar" nameFormat="CUSTOM" username="ubuntu" useOpenSSHConfig="true">
+        <option name="customName" value="Parivar" />
+      </sshConfig>
+    </configs>
+  </component>
+</project>

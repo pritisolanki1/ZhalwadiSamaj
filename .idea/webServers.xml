@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="0b566e7b-84aa-4f3d-b261-6f2e780ebfb9" name="Parivar">
+        <fileTransfer rootFolder="/var/www/zalawadisaisutharsurat" accessType="SFTP" host="ubuntu@ec2-43-205-96-60.ap-south-1.compute.amazonaws.com" port="22" sshConfigId="140059d4-b131-46d6-9a45-d90c7ba72cf0" sshConfig="Parivar" keyPair="true">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

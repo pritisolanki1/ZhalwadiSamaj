@@ -1,0 +1,41 @@
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+
+/vendor/
+node_modules/
+
+# Laravel 4 specific
+bootstrap/compiled.php
+app/storage/
+
+# Laravel 5 & Lumen specific
+public/storage
+public/hot
+
+# Laravel 5 & Lumen specific with changed public path
+public_html/storage
+public_html/hot
+
+storage/*.key
+/.vagrant
+public/image/member/*
+public/image/Business/*
+public/image/Gallery/*
+public/image/Committee/*
+public/image/MemberGallery/*
+public/image/Gallery/images/*
+public/image/Team/avatar/*
+public/image/Job/avatar/*
+image/
+.rnd
+public/docs/api-docs.json
