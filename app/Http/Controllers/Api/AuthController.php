@@ -18,42 +18,83 @@ use Illuminate\Support\Facades\Validator;
 use Laravel\Passport\Client as OClient;
 use Throwable;
 
+/**
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="API endpoints for user authentication and authorization"
+ * )
+ */
 class AuthController extends ApiController
 {
     /**
+     * @OA\Post(
+     *     path="/api/login",
+     *     tags={"Authentication"},
+     *     summary="Admin/User Login",
+     *     description="Login endpoint for admin and sub-admin users",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email", "password"},
+     *             @OA\Property(property="email", type="string", format="email", example="admin@example.com"),
+     *             @OA\Property(property="password", type="string", format="password", example="password123"),
+     *             @OA\Property(property="remember_me", type="boolean", example=false),
+     *             @OA\Property(property="device_token", type="string", example="device_token_here"),
+     *             @OA\Property(property="device_serial", type="string", example="device_serial_here")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Login successful",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Login Successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Invalid credentials")
+     * )
      * @throws Throwable
      */
-    public function signup(Request $request): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|array|size:2',
-            'name.en' => 'required',
-            'name.gu' => 'required',
-            'email' => 'required|string|email|unique:users',
-            'phone' => 'required|string|unique:users,phone',
-            'password' => 'required|string|confirmed',
-            'type' => 'required|string|in:Admin,SubAdmin',
-        ]);
-
         try {
-            if (User::find(auth()->user()->id)->hasRole('Admin')) {
-                if ($request->type !== 'SubAdmin') {
-                    throw new Exception('Unauthorize user for this action.');
-                }
-            }
-            DB::beginTransaction();
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'password' => Hash::make($request->password),
-            ])->assignRole($request->type);
-            DB::commit();
+            $request->validate([
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+                'remember_me' => 'boolean',
+            ]);
 
-            return $this->successResponse('User created successfully.', $user, 201);
-        } catch (Throwable $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
+            $credentials = request([
+                'email',
+                'password',
+            ]);
+            if (!Auth::attempt($credentials)) {
+                throw new Exception('Email id or password is wrong');
+            }
+
+            $user = User::with(['roles'])->where([
+                'email' => $credentials['email'],
+            ])->first();
+
+            $iUpdate = [];
+
+            if ($request->device_token != null) {
+                $iUpdate['device_token'] = $request->device_token;
+            }
+            if ($request->device_serial != null) {
+                $iUpdate['device_serial'] = $request->device_serial;
+            }
+
+            if (!empty($iUpdate)) {
+                $user->update($iUpdate);
+            }
+
+            $user->access_token = $user->createToken('admin')->accessToken;
+
+            return $this->successResponse('Login Successfully', $user);
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
         }
     }
 
@@ -204,88 +245,34 @@ class AuthController extends ApiController
         }
     }
 
-    public function login(Request $request): JsonResponse
-    {
-        try {
-            $request->validate([
-                'email' => 'required|string|email',
-                'password' => 'required|string',
-                'remember_me' => 'boolean',
-            ]);
-
-            $credentials = request([
-                'email',
-                'password',
-            ]);
-            if (!Auth::attempt($credentials)) {
-                throw new Exception('Email id or password is wrong');
-            }
-
-            $user = User::with(['roles'])->where([
-                'email' => $credentials['email'],
-            ])->first();
-
-            $iUpdate = [];
-
-            if ($request->device_token != null) {
-                $iUpdate['device_token'] = $request->device_token;
-            }
-            if ($request->device_serial != null) {
-                $iUpdate['device_serial'] = $request->device_serial;
-            }
-
-            if (!empty($iUpdate)) {
-                $user->update($iUpdate);
-            }
-
-            $user->access_token = $user->createToken('admin')->accessToken;
-
-            return $this->successResponse('Login Successfully', $user);
-
-            // $user = $user->toArray();
-            // $token = $this->getTokenAndRefreshToken([
-            //     'username' => $credentials['email'],
-            //     'password' => $credentials['password'],
-            // ]);
-
-            // return $this->successResponse('Login Successfully', array_merge($user, $token));
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
-    // public function getTokenAndRefreshToken($iData = [])
-    // {
-    //     try {
-    //         $oClient = OClient::where('password_client', 1)->first();
-    //         $http = new Client();
-    //         $form_params = [
-    //             'grant_type' => 'password',
-    //             'client_id' => $oClient->id,
-    //             'client_secret' => $oClient->secret,
-    //             'scope' => '*',
-    //         ];
-    //         $form_params = array_merge($form_params, $iData);
-    //         try {
-    //             $response = $http->post(url('oauth/token'), [
-    //                 'form_params' => $form_params,
-    //             ]);
-    //         } catch (Exception $e) {
-    //             throw new HttpException(500, $e->getMessage());
-    //         }
-
-    //         $iRes = json_decode($response->getBody(), true);
-    //         $iRes['expires_in'] = Carbon::parse(Carbon::now()->addDays(env(
-    //             'ACCESS_TOKEN_EXPIRED',
-    //             1
-    //         )))->toDateTimeString();
-
-    //         return $iRes;
-    //     } catch (Exception $e) {
-    //         throw new HttpException(500, $e->getMessage());
-    //     }
-    // }
-
+    /**
+     * @OA\Post(
+     *     path="/api/member_login",
+     *     tags={"Authentication"},
+     *     summary="Member Login",
+     *     description="Login endpoint for member users using phone number",
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"phone", "password"},
+     *             @OA\Property(property="phone", type="string", example="9876543210"),
+     *             @OA\Property(property="password", type="string", format="password", example="123456"),
+     *             @OA\Property(property="device_token", type="string", example="device_token_here"),
+     *             @OA\Property(property="device_serial", type="string", example="device_serial_here")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Member login successful",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Member login successfully"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Invalid credentials")
+     * )
+     */
     public function member_login(Request $request): JsonResponse
     {
         try {
@@ -327,18 +314,130 @@ class AuthController extends ApiController
             $member->access_token = $member->createToken('user')->accessToken;
 
             return $this->successResponse('Member login successfully', $member);
-
-            // $member = $member->toArray();
-            // $token = $this->getTokenAndRefreshToken([
-            //     'username' => $member['phone'],
-            //     'password' => $request->password,
-            // ]);
-            // return $this->successResponse('Member login successfully', \array_merge($member,$token));
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
     }
 
+    // public function getTokenAndRefreshToken($iData = [])
+    // {
+    //     try {
+    //         $oClient = OClient::where('password_client', 1)->first();
+    //         $http = new Client();
+    //         $form_params = [
+    //             'grant_type' => 'password',
+    //             'client_id' => $oClient->id,
+    //             'client_secret' => $oClient->secret,
+    //             'scope' => '*',
+    //         ];
+    //         $form_params = array_merge($form_params, $iData);
+    //         try {
+    //             $response = $http->post(url('oauth/token'), [
+    //                 'form_params' => $form_params,
+    //             ]);
+    //         } catch (Exception $e) {
+    //             throw new HttpException(500, $e->getMessage());
+    //         }
+
+    //         $iRes = json_decode($response->getBody(), true);
+    //         $iRes['expires_in'] = Carbon::parse(Carbon::now()->addDays(env(
+    //             'ACCESS_TOKEN_EXPIRED',
+    //             1
+    //         )))->toDateTimeString();
+
+    //         return $iRes;
+    //     } catch (Exception $e) {
+    //         throw new HttpException(500, $e->getMessage());
+    //     }
+    // }
+
+    /**
+     * @OA\Post(
+     *     path="/api/signup",
+     *     tags={"Authentication"},
+     *     summary="Create Admin/SubAdmin User",
+     *     description="Create a new admin or sub-admin user (requires authentication and Admin role)",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name", "email", "phone", "password", "type"},
+     *             @OA\Property(property="name", type="object", 
+     *                 @OA\Property(property="en", type="string", example="John Doe"),
+     *                 @OA\Property(property="gu", type="string", example="જ્હોન ડો")
+     *             ),
+     *             @OA\Property(property="email", type="string", format="email", example="subadmin@example.com"),
+     *             @OA\Property(property="phone", type="string", example="9876543210"),
+     *             @OA\Property(property="password", type="string", format="password", example="password123"),
+     *             @OA\Property(property="password_confirmation", type="string", format="password", example="password123"),
+     *             @OA\Property(property="type", type="string", enum={"Admin", "SubAdmin"}, example="SubAdmin")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="User created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="User created successfully."),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     ),
+     *     @OA\Response(response=403, description="Unauthorized")
+     * )
+     * @throws Throwable
+     */
+    public function signup(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|array|size:2',
+            'name.en' => 'required',
+            'name.gu' => 'required',
+            'email' => 'required|string|email|unique:users',
+            'phone' => 'required|string|unique:users,phone',
+            'password' => 'required|string|confirmed',
+            'type' => 'required|string|in:Admin,SubAdmin',
+        ]);
+
+        try {
+            if (User::find(auth()->user()->id)->hasRole('Admin')) {
+                if ($request->type !== 'SubAdmin') {
+                    throw new Exception('Unauthorize user for this action.');
+                }
+            }
+            DB::beginTransaction();
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'password' => Hash::make($request->password),
+            ])->assignRole($request->type);
+            DB::commit();
+
+            return $this->successResponse('User created successfully.', $user, 201);
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw new Exception($e->getMessage());
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/logout",
+     *     tags={"Authentication"},
+     *     summary="Logout User",
+     *     description="Logout the currently authenticated user and revoke their token",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Logout successful",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Successfully logged out")
+     *         )
+     *     ),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function logout(Request $request): JsonResponse
     {
         try {
@@ -349,19 +448,6 @@ class AuthController extends ApiController
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
-    }
-
-    public function user(): JsonResponse
-    {
-        // if (User::find(auth()->user()->id)->hasRole('Member')) {
-        //     $iData = Member::where('phone', $request->user()->phone)->first();
-        // } else {
-        //     $iData = User::find(auth()->user()->id);
-        // }
-        // if ($iData == null) {
-        //     throw new Exception("User Not Found");
-        // }
-        return $this->successResponse('User Get Successfully', auth()->user());
     }
 
     public function refresh(Request $request)

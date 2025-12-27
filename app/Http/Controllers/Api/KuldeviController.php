@@ -8,8 +8,23 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
+/**
+ * @OA\Tag(
+ *     name="Kuldevi",
+ *     description="API endpoints for kuldevi management"
+ * )
+ */
 class KuldeviController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/Kuldevi/get_all",
+     *     tags={"Kuldevi"},
+     *     summary="Get All Kuldevi",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): Response|JsonResponse
     {
         try {

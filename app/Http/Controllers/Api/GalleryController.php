@@ -10,8 +10,23 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Gallery",
+ *     description="API endpoints for gallery management"
+ * )
+ */
 class GalleryController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/gallery/get_all",
+     *     tags={"Gallery"},
+     *     summary="Get All Galleries",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         try {

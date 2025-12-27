@@ -16,10 +16,34 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
+/**
+ * @OA\Tag(
+ *     name="Members",
+ *     description="API endpoints for member management"
+ * )
+ */
 class MemberController extends ApiController
 {
     use MemberTraits;
 
+    /**
+     * @OA\Get(
+     *     path="/api/member/get_all",
+     *     tags={"Members"},
+     *     summary="Get All Members",
+     *     description="Retrieve a list of all members",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Members list retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Members List"),
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object"))
+     *         )
+     *     )
+     * )
+     */
     public function index(): JsonResponse
     {
         try {
@@ -43,6 +67,35 @@ class MemberController extends ApiController
     }
 
     /**
+     * @OA\Post(
+     *     path="/api/member/store",
+     *     tags={"Members"},
+     *     summary="Create New Member",
+     *     description="Create a new member record",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"name", "phone"},
+     *             @OA\Property(property="name", type="object", 
+     *                 @OA\Property(property="en", type="string", example="John Doe"),
+     *                 @OA\Property(property="gu", type="string", example="જ્હોન ડો")
+     *             ),
+     *             @OA\Property(property="phone", type="string", example="9876543210"),
+     *             @OA\Property(property="email", type="string", format="email", example="member@example.com"),
+     *             @OA\Property(property="birth_date", type="string", format="date", example="1990-01-01")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Member created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Member Created"),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     )
+     * )
      * @throws Throwable
      */
     public function store(MemberStoreRequest $request): JsonResponse
@@ -92,6 +145,31 @@ class MemberController extends ApiController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/member/get/{id}",
+     *     tags={"Members"},
+     *     summary="Get Member by ID",
+     *     description="Retrieve a specific member by ID",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Member ID",
+     *         @OA\Schema(type="string", format="uuid")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Member retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Successfully get member."),
+     *             @OA\Property(property="data", type="object")
+     *         )
+     *     )
+     * )
+     */
     public function show(Member $id): JsonResponse
     {
         try {

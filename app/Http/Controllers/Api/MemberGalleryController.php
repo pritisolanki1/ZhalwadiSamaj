@@ -11,8 +11,23 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Member Gallery",
+ *     description="API endpoints for member gallery management"
+ * )
+ */
 class MemberGalleryController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/member_gallery/get_all",
+     *     tags={"Member Gallery"},
+     *     summary="Get All Member Galleries",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         try {

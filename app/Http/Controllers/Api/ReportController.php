@@ -13,8 +13,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Reports",
+ *     description="API endpoints for report management"
+ * )
+ */
 class ReportController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/reports",
+     *     tags={"Reports"},
+     *     summary="Get All Reports",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=10)),
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(Request $request): JsonResponse
     {
         try {

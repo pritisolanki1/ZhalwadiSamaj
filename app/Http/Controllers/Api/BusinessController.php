@@ -10,8 +10,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @OA\Tag(
+ *     name="Business",
+ *     description="API endpoints for business management"
+ * )
+ */
 class BusinessController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/business/get_all",
+     *     tags={"Business"},
+     *     summary="Get All Businesses",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=20)),
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $length = $request->length ?: 20;

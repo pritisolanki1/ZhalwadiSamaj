@@ -1,0 +1,1172 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Zhalwadi Samaj API Documentation",
+        "description": "API documentation for Zhalwadi Samaj mobile application",
+        "contact": {
+            "email": "support@zhalwadisamaj.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://parivar.test",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/api/announcement/get_all": {
+            "get": {
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Get All Announcements",
+                "operationId": "a7ba7269130ef488dd74329ecf408140",
+                "parameters": [
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Admin/User Login",
+                "description": "Login endpoint for admin and sub-admin users",
+                "operationId": "222b2625838e3c57e017987f73598fda",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@example.com"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    },
+                                    "remember_me": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "device_token": {
+                                        "type": "string",
+                                        "example": "device_token_here"
+                                    },
+                                    "device_serial": {
+                                        "type": "string",
+                                        "example": "device_serial_here"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Login Successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/member_login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Member Login",
+                "description": "Login endpoint for member users using phone number",
+                "operationId": "4f42ac7372d8b9b5ab320271713dc824",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "phone",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "9876543210"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "123456"
+                                    },
+                                    "device_token": {
+                                        "type": "string",
+                                        "example": "device_token_here"
+                                    },
+                                    "device_serial": {
+                                        "type": "string",
+                                        "example": "device_serial_here"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Member login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Member login successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/api/signup": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Create Admin/SubAdmin User",
+                "description": "Create a new admin or sub-admin user (requires authentication and Admin role)",
+                "operationId": "f886d970a4e3497817841e1dc8ca2348",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "phone",
+                                    "password",
+                                    "type"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "properties": {
+                                            "en": {
+                                                "type": "string",
+                                                "example": "John Doe"
+                                            },
+                                            "gu": {
+                                                "type": "string",
+                                                "example": "જ્હોન ડો"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "subadmin@example.com"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "9876543210"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    },
+                                    "password_confirmation": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "password123"
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Admin",
+                                            "SubAdmin"
+                                        ],
+                                        "example": "SubAdmin"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User created successfully."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/logout": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout User",
+                "description": "Logout the currently authenticated user and revoke their token",
+                "operationId": "1fed6188e46ccd76d9d1e177f9b8037a",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Successfully logged out"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/business/get_all": {
+            "get": {
+                "tags": [
+                    "Business"
+                ],
+                "summary": "Get All Businesses",
+                "operationId": "7103779284cc6dd066bc570571e13733",
+                "parameters": [
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/committee": {
+            "get": {
+                "tags": [
+                    "Committee"
+                ],
+                "summary": "Get All Committees",
+                "operationId": "97bf77d2beed8c77ee8e315d60cbf704",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/donation/get_all": {
+            "get": {
+                "tags": [
+                    "Donations"
+                ],
+                "summary": "Get All Donations",
+                "operationId": "949901c53003aa515882bb6c50b1877a",
+                "parameters": [
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/gallery/get_all": {
+            "get": {
+                "tags": [
+                    "Gallery"
+                ],
+                "summary": "Get All Galleries",
+                "operationId": "529c35f610c5cc24724fb628a90e6598",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/gallery_image/update/{id}": {
+            "put": {
+                "tags": [
+                    "Gallery Images"
+                ],
+                "summary": "Update Gallery Image",
+                "operationId": "f33f274494ad4212e01c09119604b794",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/game/get_all": {
+            "get": {
+                "tags": [
+                    "Games"
+                ],
+                "summary": "Get All Games",
+                "description": "Retrieve a list of all games",
+                "operationId": "c883eff643f45c1930d0d8bb6880eb03",
+                "responses": {
+                    "200": {
+                        "description": "Games list retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "string",
+                                            "example": "Success"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Game list"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/game/store": {
+            "post": {
+                "tags": [
+                    "Games"
+                ],
+                "summary": "Create New Game",
+                "description": "Create a new game record",
+                "operationId": "23d2d937cae774e2128515f51204ce46",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "game_name",
+                                    "game_type",
+                                    "year"
+                                ],
+                                "properties": {
+                                    "game_name": {
+                                        "properties": {
+                                            "en": {
+                                                "type": "string",
+                                                "example": "Cricket"
+                                            },
+                                            "gu": {
+                                                "type": "string",
+                                                "example": "ક્રિકેટ"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "game_type": {
+                                        "type": "string",
+                                        "example": "sports"
+                                    },
+                                    "year": {
+                                        "type": "integer",
+                                        "example": 2024
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Game created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Game Created Successfully."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/game_result/get_all": {
+            "get": {
+                "tags": [
+                    "Game Results"
+                ],
+                "summary": "Get All Game Results",
+                "operationId": "ce322012c2ef1a7c7d5904bd88149eaf",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/all": {
+            "get": {
+                "tags": [
+                    "General"
+                ],
+                "summary": "Get All Dashboard Data",
+                "description": "Retrieve all dashboard data including members, donations, committees, games, galleries, etc.",
+                "operationId": "afd97bb3691a2572b05018eba21f50a0",
+                "responses": {
+                    "200": {
+                        "description": "Dashboard data retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "dashboard": {
+                                            "type": "object"
+                                        },
+                                        "members": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "donations": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "committees": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "games": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "galleries": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/member/search_member": {
+            "get": {
+                "tags": [
+                    "General"
+                ],
+                "summary": "Search Members",
+                "description": "Search members with various filters",
+                "operationId": "6a279665104c06b81ac41f5d0b93be31",
+                "parameters": [
+                    {
+                        "name": "search_key",
+                        "in": "query",
+                        "description": "Search key (name, unique_number, native, profession)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search_value",
+                        "in": "query",
+                        "description": "Search value",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_by_blood_group",
+                        "in": "query",
+                        "description": "Filter by blood group",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter_by_status",
+                        "in": "query",
+                        "description": "Filter by status",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "description": "Number of results per page",
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Members found successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/job/get_all": {
+            "get": {
+                "tags": [
+                    "Jobs"
+                ],
+                "summary": "Get All Jobs",
+                "operationId": "223c447a111876c5a01534568e03d600",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/Kuldevi/get_all": {
+            "get": {
+                "tags": [
+                    "Kuldevi"
+                ],
+                "summary": "Get All Kuldevi",
+                "operationId": "2daa4fdbe8b472c2e77413e1092c587c",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/member/get_all": {
+            "get": {
+                "tags": [
+                    "Members"
+                ],
+                "summary": "Get All Members",
+                "description": "Retrieve a list of all members",
+                "operationId": "d9644bfff4b801c18e5bc62535614251",
+                "responses": {
+                    "200": {
+                        "description": "Members list retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Members List"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/member/store": {
+            "post": {
+                "tags": [
+                    "Members"
+                ],
+                "summary": "Create New Member",
+                "description": "Create a new member record",
+                "operationId": "b13bdb994b0bc74c8bcb4bb2f89ff643",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "properties": {
+                                            "en": {
+                                                "type": "string",
+                                                "example": "John Doe"
+                                            },
+                                            "gu": {
+                                                "type": "string",
+                                                "example": "જ્હોન ડો"
+                                            }
+                                        },
+                                        "type": "object"
+                                    },
+                                    "phone": {
+                                        "type": "string",
+                                        "example": "9876543210"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "member@example.com"
+                                    },
+                                    "birth_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "1990-01-01"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Member created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Member Created"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/member/get/{id}": {
+            "get": {
+                "tags": [
+                    "Members"
+                ],
+                "summary": "Get Member by ID",
+                "description": "Retrieve a specific member by ID",
+                "operationId": "b36bd6349006c73dea59cec479848793",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Member ID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Member retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Successfully get member."
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/member_gallery/get_all": {
+            "get": {
+                "tags": [
+                    "Member Gallery"
+                ],
+                "summary": "Get All Member Galleries",
+                "operationId": "e65c5d040e71ad69d7c1f444e9cb30c6",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/nativePlaces/get_all": {
+            "get": {
+                "tags": [
+                    "Native Places"
+                ],
+                "summary": "Get All Native Places",
+                "operationId": "8011f427e4f5e5ff321664e295319b37",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/reports": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get All Reports",
+                "operationId": "ff83498294a9277f092f65a52c58fbc5",
+                "parameters": [
+                    {
+                        "name": "length",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/result/get_all": {
+            "get": {
+                "tags": [
+                    "Results"
+                ],
+                "summary": "Get All Results",
+                "operationId": "22fc2481fe20f28af123f58de90efc80",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/team/get_all": {
+            "get": {
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Get All Teams",
+                "operationId": "c823cf3fdd2684ab1e868c13064fbbf2",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/Zone/get_all": {
+            "get": {
+                "tags": [
+                    "Zones"
+                ],
+                "summary": "Get All Zones",
+                "operationId": "7d7d262603902c2fe59e83607c68865c",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter your bearer token in the format: Bearer {token}"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Announcements",
+            "description": "API endpoints for announcement management"
+        },
+        {
+            "name": "Authentication",
+            "description": "API endpoints for user authentication and authorization"
+        },
+        {
+            "name": "Business",
+            "description": "API endpoints for business management"
+        },
+        {
+            "name": "Committee",
+            "description": "API endpoints for committee management"
+        },
+        {
+            "name": "Donations",
+            "description": "API endpoints for donation management"
+        },
+        {
+            "name": "Gallery",
+            "description": "API endpoints for gallery management"
+        },
+        {
+            "name": "Gallery Images",
+            "description": "API endpoints for gallery image management"
+        },
+        {
+            "name": "Games",
+            "description": "API endpoints for game management"
+        },
+        {
+            "name": "Game Results",
+            "description": "API endpoints for game result management"
+        },
+        {
+            "name": "General",
+            "description": "General API endpoints for dashboard and common data"
+        },
+        {
+            "name": "Jobs",
+            "description": "API endpoints for job management"
+        },
+        {
+            "name": "Kuldevi",
+            "description": "API endpoints for kuldevi management"
+        },
+        {
+            "name": "Members",
+            "description": "API endpoints for member management"
+        },
+        {
+            "name": "Member Gallery",
+            "description": "API endpoints for member gallery management"
+        },
+        {
+            "name": "Native Places",
+            "description": "API endpoints for native places management"
+        },
+        {
+            "name": "Reports",
+            "description": "API endpoints for report management"
+        },
+        {
+            "name": "Results",
+            "description": "API endpoints for result management"
+        },
+        {
+            "name": "Teams",
+            "description": "API endpoints for team management"
+        },
+        {
+            "name": "Zones",
+            "description": "API endpoints for zone management"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ]
+}

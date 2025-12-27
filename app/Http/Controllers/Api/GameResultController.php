@@ -15,8 +15,23 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
+/**
+ * @OA\Tag(
+ *     name="Game Results",
+ *     description="API endpoints for game result management"
+ * )
+ */
 class GameResultController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/game_result/get_all",
+     *     tags={"Game Results"},
+     *     summary="Get All Game Results",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): AnonymousResourceCollection
     {
         $gameResults = GameResult::loadRelationships()->get();

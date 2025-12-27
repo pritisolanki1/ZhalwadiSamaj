@@ -12,8 +12,24 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @OA\Tag(
+ *     name="Donations",
+ *     description="API endpoints for donation management"
+ * )
+ */
 class DonationController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/donation/get_all",
+     *     tags={"Donations"},
+     *     summary="Get All Donations",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=20)),
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $length = $request->length ?: 20;

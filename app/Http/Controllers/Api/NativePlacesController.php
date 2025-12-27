@@ -9,8 +9,23 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @OA\Tag(
+ *     name="Native Places",
+ *     description="API endpoints for native places management"
+ * )
+ */
 class NativePlacesController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/nativePlaces/get_all",
+     *     tags={"Native Places"},
+     *     summary="Get All Native Places",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): AnonymousResourceCollection
     {
         $nativePlaces = NativePlace::get();

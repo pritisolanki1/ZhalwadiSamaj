@@ -31,10 +31,36 @@ use Illuminate\Http\Response;
 use Intervention\Image\Facades\Image;
 use Spatie\Activitylog\Models\Activity;
 
+/**
+ * @OA\Tag(
+ *     name="General",
+ *     description="General API endpoints for dashboard and common data"
+ * )
+ */
 class GeneralController extends ApiController
 {
     use MemberTraits;
 
+    /**
+     * @OA\Get(
+     *     path="/api/all",
+     *     tags={"General"},
+     *     summary="Get All Dashboard Data",
+     *     description="Retrieve all dashboard data including members, donations, committees, games, galleries, etc.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Dashboard data retrieved successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="dashboard", type="object"),
+     *             @OA\Property(property="members", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="donations", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="committees", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="games", type="array", @OA\Items(type="object")),
+     *             @OA\Property(property="galleries", type="array", @OA\Items(type="object"))
+     *         )
+     *     )
+     * )
+     */
     public function index(): Response|JsonResponse|Application|ResponseFactory
     {
         try {
@@ -229,6 +255,51 @@ class GeneralController extends ApiController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/member/search_member",
+     *     tags={"General"},
+     *     summary="Search Members",
+     *     description="Search members with various filters",
+     *     @OA\Parameter(
+     *         name="search_key",
+     *         in="query",
+     *         description="Search key (name, unique_number, native, profession)",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="search_value",
+     *         in="query",
+     *         description="Search value",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter_by_blood_group",
+     *         in="query",
+     *         description="Filter by blood group",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filter_by_status",
+     *         in="query",
+     *         description="Filter by status",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="length",
+     *         in="query",
+     *         description="Number of results per page",
+     *         @OA\Schema(type="integer", default=20)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Members found successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object"))
+     *         )
+     *     )
+     * )
+     */
     public function searchMember(SearchMemberRequest $request): AnonymousResourceCollection
     {
         //        DB::enableQueryLog();

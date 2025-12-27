@@ -10,8 +10,23 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
+/**
+ * @OA\Tag(
+ *     name="Zones",
+ *     description="API endpoints for zone management"
+ * )
+ */
 class ZoneController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/Zone/get_all",
+     *     tags={"Zones"},
+     *     summary="Get All Zones",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): AnonymousResourceCollection
     {
         $zones = Zone::get();

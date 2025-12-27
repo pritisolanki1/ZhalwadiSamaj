@@ -7,8 +7,23 @@ use App\Models\Result;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * @OA\Tag(
+ *     name="Results",
+ *     description="API endpoints for result management"
+ * )
+ */
 class ResultController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/result/get_all",
+     *     tags={"Results"},
+     *     summary="Get All Results",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         try {

@@ -7,8 +7,23 @@ use App\Http\Resources\CommitteeResource;
 use App\Models\Committee;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * @OA\Tag(
+ *     name="Committee",
+ *     description="API endpoints for committee management"
+ * )
+ */
 class CommitteeController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/committee",
+     *     tags={"Committee"},
+     *     summary="Get All Committees",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         $committees = Committee::loadRelationships()->get();

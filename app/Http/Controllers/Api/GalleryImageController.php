@@ -10,8 +10,24 @@ use Illuminate\Http\Response;
 
 // use App\Http\Requests\GalleryImageStoreRequest;
 
+/**
+ * @OA\Tag(
+ *     name="Gallery Images",
+ *     description="API endpoints for gallery image management"
+ * )
+ */
 class GalleryImageController extends ApiController
 {
+    /**
+     * @OA\Put(
+     *     path="/api/gallery_image/update/{id}",
+     *     tags={"Gallery Images"},
+     *     summary="Update Gallery Image",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="string")),
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function update(Request $request, $id): Response|JsonResponse
     {
         try {

@@ -9,8 +9,23 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Jobs",
+ *     description="API endpoints for job management"
+ * )
+ */
 class JobController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/job/get_all",
+     *     tags={"Jobs"},
+     *     summary="Get All Jobs",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         try {

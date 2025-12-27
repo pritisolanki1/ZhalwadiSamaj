@@ -14,8 +14,25 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Announcements",
+ *     description="API endpoints for announcement management"
+ * )
+ */
 class AnnouncementController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/announcement/get_all",
+     *     tags={"Announcements"},
+     *     summary="Get All Announcements",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Parameter(name="length", in="query", @OA\Schema(type="integer", default=20)),
+     *     @OA\Parameter(name="status", in="query", @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $length = $request->length ?: 20;

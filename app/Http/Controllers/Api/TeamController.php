@@ -9,8 +9,23 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 
+/**
+ * @OA\Tag(
+ *     name="Teams",
+ *     description="API endpoints for team management"
+ * )
+ */
 class TeamController extends ApiController
 {
+    /**
+     * @OA\Get(
+     *     path="/api/team/get_all",
+     *     tags={"Teams"},
+     *     summary="Get All Teams",
+     *     security={{"bearerAuth": {}}},
+     *     @OA\Response(response=200, description="Success")
+     * )
+     */
     public function index(): JsonResponse
     {
         try {
