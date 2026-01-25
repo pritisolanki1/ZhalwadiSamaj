@@ -1,5 +1,6 @@
 [build]
 buildpacks = ["heroku/php"]
+buildCommand = "cp .env.production .env || true"
 
 [deploy]
 restartPolicyType = "on_failure"
