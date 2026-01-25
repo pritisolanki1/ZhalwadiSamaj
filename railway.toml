@@ -1,5 +1,5 @@
 [build]
-builder = "heroku.buildpacks"
+buildpacks = ["heroku/php"]
 
 [deploy]
 restartPolicyType = "on_failure"
