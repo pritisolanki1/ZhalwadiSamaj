@@ -2,7 +2,7 @@
 buildpacks = ["heroku/php"]
 
 [build.config]
-PHP_VERSION = "8.1"
+PHP_VERSION = "8.1.2"
 
 [deploy]
 restartPolicyType = "on_failure"
