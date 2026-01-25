@@ -1,0 +1,6 @@
+[build]
+builder = "heroku.buildpacks"
+
+[deploy]
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

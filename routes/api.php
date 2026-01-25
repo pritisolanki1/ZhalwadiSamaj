@@ -32,6 +32,15 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Health check endpoint for Railway deployment
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'OK',
+        'timestamp' => now()->toIso8601String(),
+        'environment' => config('app.env'),
+    ]);
+});
+
 // Route::group(['middleware' => ['throttle:3,3,route_admin']], function () {
 Route::post('/login', [AuthController::class, 'login']);
 // });
