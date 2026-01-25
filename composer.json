@@ -10,6 +10,7 @@
     "require": {
         "php": "^8.2",
         "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
         "ext-zip": "*",
         "apility/laravel-fcm": "^1.4",
         "awobaz/compoships": "^2.1",
