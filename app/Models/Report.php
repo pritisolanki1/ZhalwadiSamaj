@@ -44,11 +44,10 @@ class Report extends Model
 
     public function getImageAttribute($value): string|UrlGenerator|Application
     {
-        $image = '';
         if (isset($value) && !empty($value)) {
-            $image = url('/image/0/0/' . Config::get('general.image_path.report.image') . $value);
+            return getImageUrlIfExists($value, Config::get('general.image_path.report.image'));
         }
 
-        return $image;
+        return '';
     }
 }

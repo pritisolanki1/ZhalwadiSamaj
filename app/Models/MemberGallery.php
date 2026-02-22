@@ -51,25 +51,42 @@ class MemberGallery extends Model
     public function getImagesAttribute($value)
     {
         $images = jsonDecode($value);
-        foreach ($images as &$image) {
+        if (!is_array($images)) {
+            return [];
+        }
+        
+        $result = [];
+        foreach ($images as $image) {
             if (isset($image) && !empty($image)) {
-                $image = url('/image/0/0/' . Config::get('general.image_path.member_gallery.images') . $image);
+                $imageUrl = getImageUrlIfExists($image, Config::get('general.image_path.member_gallery.images'));
+                if (!empty($imageUrl)) {
+                    $result[] = $imageUrl;
+                }
             }
         }
 
-        return $images;
+        return $result;
     }
 
     public function getVideosAttribute($value)
     {
         $videos = jsonDecode($value);
-        foreach ($videos as &$video) {
+        if (!is_array($videos)) {
+            return [];
+        }
+        
+        $result = [];
+        foreach ($videos as $video) {
             if (isset($video) && !empty($video)) {
-                $video = url('/image/0/0/' . Config::get('general.image_path.member_gallery.images') . $video);
+                // For videos, check if file exists
+                $videoPath = public_path(Config::get('general.image_path.member_gallery.videos') . $video);
+                if (\Illuminate\Support\Facades\File::exists($videoPath)) {
+                    $result[] = url(Config::get('general.image_path.member_gallery.videos') . $video);
+                }
             }
         }
 
-        return $videos;
+        return $result;
     }
 
     public function reports(): MorphMany

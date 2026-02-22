@@ -54,25 +54,41 @@ class Gallery extends Model
     public function getImagesAttribute($value)
     {
         $images = jsonDecode($value);
-        foreach ($images as &$image) {
+        if (!is_array($images)) {
+            return [];
+        }
+        
+        $result = [];
+        foreach ($images as $image) {
             if (isset($image) && !empty($image)) {
-                $image = url('/image/0/0/' . Config::get('general.image_path.gallery.images') . $image);
+                $imageUrl = getImageUrlIfExists($image, Config::get('general.image_path.gallery.images'));
+                if (!empty($imageUrl)) {
+                    $result[] = $imageUrl;
+                }
             }
         }
 
-        return $images;
+        return $result;
     }
 
     public function getVideosAttribute($value)
     {
         $videos = jsonDecode($value);
-        foreach ($videos as &$video) {
+        if (!is_array($videos)) {
+            return [];
+        }
+        
+        $result = [];
+        foreach ($videos as $video) {
             if (isset($video) && !empty($video)) {
-                $video = url('/image/0/0/' . Config::get('general.image_path.gallery.images') . $video);
+                $videoUrl = getImageUrlIfExists($video, Config::get('general.image_path.gallery.images'));
+                if (!empty($videoUrl)) {
+                    $result[] = $videoUrl;
+                }
             }
         }
 
-        return $videos;
+        return $result;
     }
 
     public function getStatusAttribute($value)

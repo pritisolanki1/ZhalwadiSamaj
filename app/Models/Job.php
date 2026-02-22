@@ -88,11 +88,12 @@ class Job extends Model
             if ($contains) {
                 return $value;
             } else {
-                $value = url('/image/0/0/' . Config::get('general.image_path.job.avatar') . $value);
+                $imageUrl = getImageUrlIfExists($value, Config::get('general.image_path.job.avatar'));
+                return $imageUrl ?: '';
             }
         }
 
-        return singeValue($value);
+        return '';
     }
 
     public function member(): BelongsTo

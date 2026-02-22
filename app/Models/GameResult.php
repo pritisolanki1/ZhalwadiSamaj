@@ -32,10 +32,11 @@ class GameResult extends Model
     public function getImageAttribute($value)
     {
         if (isset($value) && !empty($value)) {
-            $value = url('/image/0/0/' . Config::get('general.image_path.game_result.image') . $value);
+            $imageUrl = getImageUrlIfExists($value, Config::get('general.image_path.game_result.image'));
+            return $imageUrl ?: '';
         }
 
-        return singeValue($value);
+        return '';
     }
 
     public function scopeLoadRelationships($query)

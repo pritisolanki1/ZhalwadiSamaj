@@ -184,3 +184,32 @@ function checkDeferenceDeleteMedia($new, $old): void
         File::delete($media);
     }
 }
+
+/**
+ * Check if image file exists and return URL or empty string
+ * 
+ * @param string $imagePath The relative image path from public directory
+ * @param string $configPath The config path for the image type
+ * @return string URL if file exists, empty string otherwise
+ */
+function getImageUrlIfExists($imagePath, $configPath): string
+{
+    if (empty($imagePath)) {
+        return '';
+    }
+    
+    // If already a full URL, return as is
+    if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
+        return $imagePath;
+    }
+    
+    $fullPath = public_path($configPath . $imagePath);
+    
+    // Check if file exists
+    if (File::exists($fullPath)) {
+        return url('/image/0/0/' . $configPath . $imagePath);
+    }
+    
+    // Return empty string if file doesn't exist
+    return '';
+}

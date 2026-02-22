@@ -84,23 +84,32 @@ trait MemberAttributes
             if ($contains) {
                 return $value;
             } else {
-                $value = url('/image/0/0/' . Config::get('general.image_path.member.avatar') . $value);
+                $imageUrl = getImageUrlIfExists($value, Config::get('general.image_path.member.avatar'));
+                return $imageUrl ?: '';
             }
         }
 
-        return singeValue($value);
+        return '';
     }
 
     public function getSliderAttribute($value)
     {
         $images = jsonDecode($value);
-        foreach ($images as &$image) {
+        if (!is_array($images)) {
+            return [];
+        }
+        
+        $result = [];
+        foreach ($images as $image) {
             if (isset($image) && !empty($image)) {
-                $image = url('/image/0/0/' . Config::get('general.image_path.member.slider') . $image);
+                $imageUrl = getImageUrlIfExists($image, Config::get('general.image_path.member.slider'));
+                if (!empty($imageUrl)) {
+                    $result[] = $imageUrl;
+                }
             }
         }
 
-        return $images;
+        return $result;
     }
 
     public function getProfessionAttribute($value)

@@ -45,10 +45,11 @@ class Team extends Model
     public function getAvatarAttribute($value)
     {
         if (isset($value) && !empty($value)) {
-            $value = url('/image/0/0/' . Config::get('general.image_path.team.avatar') . $value);
+            $imageUrl = getImageUrlIfExists($value, Config::get('general.image_path.team.avatar'));
+            return $imageUrl ?: '';
         }
 
-        return singeValue($value);
+        return '';
     }
 
     public function getStatusAttribute($value)
