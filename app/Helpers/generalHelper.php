@@ -198,15 +198,27 @@ function getImageUrlIfExists($imagePath, $configPath): string
         return '';
     }
     
-    // If already a full URL, return as is
+    // If already a full URL, validate it exists before returning
     if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
-        return $imagePath;
+        // Extract the path from URL to check if file exists
+        $parsedUrl = parse_url($imagePath);
+        if (isset($parsedUrl['path'])) {
+            $pathFromUrl = ltrim($parsedUrl['path'], '/');
+            // Remove /image/0/0/ prefix if present
+            $pathFromUrl = preg_replace('#^image/0/0/#', '', $pathFromUrl);
+            $fullPath = public_path($pathFromUrl);
+            if (File::exists($fullPath)) {
+                return $imagePath;
+            }
+        }
+        return '';
     }
     
+    // Build the full file path
     $fullPath = public_path($configPath . $imagePath);
     
     // Check if file exists
-    if (File::exists($fullPath)) {
+    if (File::exists($fullPath) && is_file($fullPath)) {
         return url('/image/0/0/' . $configPath . $imagePath);
     }
     

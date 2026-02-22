@@ -80,10 +80,23 @@ trait MemberAttributes
     public function getAvatarAttribute($value)
     {
         if (isset($value) && !empty($value)) {
-            $contains = Str::contains($value, url(''));
-            if ($contains) {
-                return $value;
+            // If already a full URL, validate it exists
+            if (Str::contains($value, url('')) || filter_var($value, FILTER_VALIDATE_URL)) {
+                // Extract path from URL and check if file exists
+                $parsedUrl = parse_url($value);
+                if (isset($parsedUrl['path'])) {
+                    $pathFromUrl = ltrim($parsedUrl['path'], '/');
+                    // Remove /image/0/0/ prefix if present
+                    $pathFromUrl = preg_replace('#^image/0/0/#', '', $pathFromUrl);
+                    $fullPath = public_path($pathFromUrl);
+                    if (\Illuminate\Support\Facades\File::exists($fullPath) && is_file($fullPath)) {
+                        return $value;
+                    }
+                }
+                // URL doesn't point to existing file, return empty
+                return '';
             } else {
+                // It's a filename, check if file exists
                 $imageUrl = getImageUrlIfExists($value, Config::get('general.image_path.member.avatar'));
                 return $imageUrl ?: '';
             }
