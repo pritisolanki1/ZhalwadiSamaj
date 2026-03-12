@@ -134,7 +134,7 @@ return [
     |
     */
 
-    'providers' => [
+    'providers' => array_filter([
 
         /*
          * Laravel Framework Service Providers...
@@ -166,9 +166,9 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\TelescopeServiceProvider::class,
-        'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider',
+        env('APP_ENV') === 'local' ? Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class : null,
         Intervention\Image\ImageServiceProvider::class,
-    ],
+    ]),
 
     /*
     |--------------------------------------------------------------------------
