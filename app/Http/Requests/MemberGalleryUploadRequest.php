@@ -12,7 +12,7 @@ class MemberGalleryUploadRequest extends BaseFormRequest
     public function rules(): array
     {
         return [
-            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+            'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
             'video.*' => 'mimetypes:video/avi,video/mpeg,video/quicktime',
         ];
     }

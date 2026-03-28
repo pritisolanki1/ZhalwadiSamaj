@@ -81,7 +81,7 @@ class GalleryController extends ApiController
                 throw new Exception('Gallery not found');
             }
             $request->validate([
-                'image.*'     => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+                'image.*'     => 'image|mimes:jpeg,png,jpg,gif,svg',
                 // 'video.*' => 'mimetypes:video/mp4,video/3gpp,video/x-msvideo',
                 'description' => 'filled',
             ]);

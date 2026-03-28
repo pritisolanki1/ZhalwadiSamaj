@@ -179,8 +179,8 @@ class MemberController extends ApiController
                 throw new Exception('Member not found');
             }
             $request->validate([
-                'avatar'   => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-                'slider.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+                'avatar'   => 'image|mimes:jpeg,png,jpg,gif,svg',
+                'slider.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
             ]);
 
             $insertFiled['avatar'] = '';

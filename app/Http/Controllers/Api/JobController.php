@@ -72,7 +72,7 @@ class JobController extends ApiController
                 throw new Exception('Job not found');
             }
             $request->validate([
-                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg',
             ]);
 
             $avatar = $request->file('avatar');

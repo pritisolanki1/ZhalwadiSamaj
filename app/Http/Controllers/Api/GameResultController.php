@@ -76,7 +76,7 @@ class GameResultController extends ApiController
                 throw new Exception('Game Result not found');
             }
             $request->validate([
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
             ]);
 
             $insertFiled['image'] = '';

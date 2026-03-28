@@ -58,9 +58,9 @@ class BusinessController extends ApiController
                 throw new Exception('Business not found');
             }
             $request->validate([
-                'logo.*'    => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-                'slider.*'  => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
-                'gallery.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:4048',
+                'logo.*'    => 'image|mimes:jpeg,png,jpg,gif,svg',
+                'slider.*'  => 'image|mimes:jpeg,png,jpg,gif,svg',
+                'gallery.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
             ]);
 
             $insertFiled['logo'] = [];
