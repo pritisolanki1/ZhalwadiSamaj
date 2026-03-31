@@ -13,6 +13,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class AnnouncementController extends ApiController
 {
@@ -45,7 +47,11 @@ class AnnouncementController extends ApiController
             $request->validated();
             $members = $request->members_id ? explode(',', $request->members_id) : [];
             $excludeMembers = $request->exclude_members_id ? explode(',', $request->exclude_members_id) : [];
-            $insertFiled = $request->except('member');
+            $insertFiled = $request->except([
+                'member',
+                'members_id',
+                'exclude_members_id',
+            ]);
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $image->extension();
@@ -68,10 +74,20 @@ class AnnouncementController extends ApiController
                 }
                 $announcement->members()->sync($members);
             }
-            $this->sendNotice($announcement);
+
+            app()->terminating(function () use ($announcement) {
+                try {
+                    $this->sendNotice($announcement->fresh('members'));
+                } catch (Throwable $e) {
+                    Log::error('Announcement notification failed', [
+                        'announcement_id' => $announcement->id,
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            });
 
             return $this->successResponse('Announcement Created', AnnouncementResource::make($announcement), 201);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage());
         }
     }
@@ -81,7 +97,7 @@ class AnnouncementController extends ApiController
         $request->validated();
 
         $announcement = Announcement::find($id);
-        if (!$announcement->exists()) {
+        if (!$announcement) {
             throw new Exception('Announcement not found');
         }
 
@@ -91,7 +107,16 @@ class AnnouncementController extends ApiController
 
         $announcement->fill(Arr::except($request->all(), 'image'))->save();
         $announcement->fresh();
-        $this->sendNotice($announcement);
+        app()->terminating(function () use ($announcement) {
+            try {
+                $this->sendNotice($announcement->fresh('members'));
+            } catch (Throwable $e) {
+                Log::error('Announcement notification failed', [
+                    'announcement_id' => $announcement->id,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        });
 
         return $this->successResponse('Announcement updated', AnnouncementResource::make($announcement), 201);
     }
@@ -100,13 +125,13 @@ class AnnouncementController extends ApiController
     {
         try {
             $announcement = Announcement::find($id);
-            if (!$announcement->exists()) {
+            if (!$announcement) {
                 throw new Exception('Announcement not found or it is already been deleted');
             }
             $announcement->delete();
 
             return $this->successResponse('Announcement deleted', null, 201);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage());
         }
     }
