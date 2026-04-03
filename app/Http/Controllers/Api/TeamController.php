@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 
 class TeamController extends ApiController
 {
@@ -86,7 +87,8 @@ class TeamController extends ApiController
     public function upload_image(Request $request, $id): JsonResponse
     {
         try {
-            if (!Team::find($id)) {
+            $Team = Team::find($id);
+            if (!$Team) {
                 throw new Exception('Team not found');
             }
             $request->validate([
@@ -97,11 +99,17 @@ class TeamController extends ApiController
 
             if ($request->hasFile('avatar')) {
                 $avatar = $request->file('avatar');
+                $oldAvatar = $Team->getRawOriginal('avatar');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
                 $avatar->move(public_path(Config::get('general.image_path.team.avatar')), $name);
+
+                $oldAvatarPath = public_path(Config::get('general.image_path.team.avatar') . $oldAvatar);
+                if (!empty($oldAvatar) && File::exists($oldAvatarPath) && File::isFile($oldAvatarPath)) {
+                    File::delete($oldAvatarPath);
+                }
+
                 $insertFiled['avatar'] = $name;
             }
-            $Team = Team::findOrFail($id);
             $Team->avatar = !empty($insertFiled['avatar']) ? $insertFiled['avatar'] : $Team->avatar;
             $Team->save();
 

@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
 
@@ -175,7 +176,8 @@ class MemberController extends ApiController
     {
         try {
             //dd($request->all());
-            if (!Member::find($id)) {
+            $Member = Member::find($id);
+            if (!$Member) {
                 throw new Exception('Member not found');
             }
             $request->validate([
@@ -188,8 +190,11 @@ class MemberController extends ApiController
 
             if ($request->hasFile('avatar')) {
                 $avatar = $request->file('avatar');
+                $oldAvatar = $Member->getRawOriginal('avatar');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
                 $avatar->move(public_path(Config::get('general.image_path.member.avatar')), $name);
+                $this->deleteMemberAvatarIfExists($oldAvatar);
+
                 $insertFiled['avatar'] = $name;
             }
             // if ( $request->hasFile('slider') ) {
@@ -211,8 +216,6 @@ class MemberController extends ApiController
                     $insertFiled['slider'][] = $name;
                 }
             }
-            $Member = Member::find($id);
-
             foreach ($Member->slider as $slider1) {
                 $array = explode('/', $slider1);
                 $insertFiled['slider'][] = end($array);
@@ -220,13 +223,30 @@ class MemberController extends ApiController
             // $Member->avatar = !empty($insertFiled['avatar']) ? $insertFiled['avatar'] : $Member->avatar;
             // $Member->slider = !empty($insertFiled['slider']) ? $insertFiled['slider'] : $Member->slider;
 
-            $Member->avatar = $insertFiled['avatar'];
+            if (!empty($insertFiled['avatar'])) {
+                $Member->avatar = $insertFiled['avatar'];
+            }
             $Member->slider = $insertFiled['slider'];
             $Member->save();
 
             return $this->successResponse('Records updated successfully.');
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    private function deleteMemberAvatarIfExists(?string $avatar): void
+    {
+        if (empty($avatar)) {
+            return;
+        }
+
+        $avatarPath = public_path(
+            trim(Config::get('general.image_path.member.avatar'), '/') . '/' . ltrim($avatar, '/')
+        );
+
+        if (File::exists($avatarPath) && File::isFile($avatarPath)) {
+            File::delete($avatarPath);
         }
     }
 

@@ -13,6 +13,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Throwable;
 
 class GameResultController extends ApiController
@@ -72,7 +73,8 @@ class GameResultController extends ApiController
     {
         DB::beginTransaction();
         try {
-            if (!GameResult::find($id)) {
+            $gameResult = GameResult::find($id);
+            if (!$gameResult) {
                 throw new Exception('Game Result not found');
             }
             $request->validate([
@@ -83,12 +85,18 @@ class GameResultController extends ApiController
 
             if ($request->hasFile('images')) {
                 $image = $request->file('images');
+                $oldImage = $gameResult->getRawOriginal('image');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $image->extension();
                 $image->move(public_path(Config::get('general.image_path.game_result.image')), $name);
+
+                $oldImagePath = public_path(Config::get('general.image_path.game_result.image') . $oldImage);
+                if (!empty($oldImage) && File::exists($oldImagePath) && File::isFile($oldImagePath)) {
+                    File::delete($oldImagePath);
+                }
+
                 $insertFiled['image'] = $name;
             }
 
-            $gameResult = GameResult::findOrFail($id);
             $gameResult->image = $insertFiled['image'];
             $gameResult->save();
             DB::commit();

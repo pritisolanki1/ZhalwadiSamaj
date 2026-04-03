@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\File;
 
 class BusinessController extends ApiController
 {
@@ -36,7 +37,7 @@ class BusinessController extends ApiController
     {
         try {
             $business = Business::find($id);
-            if (!$business->exists()) {
+            if (!$business) {
                 throw new Exception('Business not found');
             }
 
@@ -54,7 +55,7 @@ class BusinessController extends ApiController
     {
         try {
             $iObject = Business::find($id);
-            if (!$iObject->exists()) {
+            if (!$iObject) {
                 throw new Exception('Business not found');
             }
             $request->validate([
@@ -68,28 +69,34 @@ class BusinessController extends ApiController
             $insertFiled['gallery'] = [];
 
             if ($request->hasFile('logo')) {
+                $existingLogos = jsonDecode($iObject->getRawOriginal('logo'));
                 $logos = $request->file('logo');
                 foreach ($logos as $logo) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $logo->extension();
                     $logo->move('image/Business/logo/', $name);
                     $insertFiled['logo'][] = $name;
                 }
+                $this->deleteImages($existingLogos, 'image/Business/logo/');
             }
             if ($request->hasFile('slider')) {
+                $existingSliders = jsonDecode($iObject->getRawOriginal('slider'));
                 $sliders = $request->file('slider');
                 foreach ($sliders as $slider) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $slider->extension();
                     $slider->move('image/Business/slider/', $name);
                     $insertFiled['slider'][] = $name;
                 }
+                $this->deleteImages($existingSliders, 'image/Business/slider/');
             }
             if ($request->hasFile('gallery')) {
+                $existingGallery = jsonDecode($iObject->getRawOriginal('gallery'));
                 $gallerys = $request->file('gallery');
                 foreach ($gallerys as $gallery) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $gallery->extension();
                     $gallery->move('image/Business/gallery/', $name);
                     $insertFiled['gallery'][] = $name;
                 }
+                $this->deleteImages($existingGallery, 'image/Business/gallery/');
             }
 
             $business = Business::findOrFail($id);
@@ -101,6 +108,24 @@ class BusinessController extends ApiController
             return $this->successResponse('Records updated successfully.');
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    private function deleteImages($images, string $directory): void
+    {
+        if (!is_array($images)) {
+            return;
+        }
+
+        foreach ($images as $image) {
+            if (empty($image)) {
+                continue;
+            }
+
+            $imagePath = public_path($directory . $image);
+            if (File::exists($imagePath) && File::isFile($imagePath)) {
+                File::delete($imagePath);
+            }
         }
     }
 }

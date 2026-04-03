@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 
 class JobController extends ApiController
 {
@@ -68,7 +69,8 @@ class JobController extends ApiController
     public function upload_image(Request $request, $id): JsonResponse
     {
         try {
-            if (!Job::find($id)) {
+            $Job = Job::find($id);
+            if (!$Job) {
                 throw new Exception('Job not found');
             }
             $request->validate([
@@ -76,10 +78,15 @@ class JobController extends ApiController
             ]);
 
             $avatar = $request->file('avatar');
+            $oldAvatar = $Job->getRawOriginal('avatar');
             $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
             $avatar->move(public_path(Config::get('general.image_path.job.avatar')), $name);
-            // dd($avatar);
-            $Job = Job::find($id);
+
+            $oldAvatarPath = public_path(Config::get('general.image_path.job.avatar') . $oldAvatar);
+            if (!empty($oldAvatar) && File::exists($oldAvatarPath) && File::isFile($oldAvatarPath)) {
+                File::delete($oldAvatarPath);
+            }
+
             $Job->avatar = $name;
             $Job->save();
 
