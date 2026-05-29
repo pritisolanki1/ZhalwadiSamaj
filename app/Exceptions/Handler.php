@@ -27,7 +27,9 @@ class Handler extends ExceptionHandler
      *
      * @var array
      */
-    protected $dontReport = [//
+    protected $dontReport = [
+        AuthenticationException::class,
+        OAuthServerException::class,
     ];
 
     /**
@@ -49,13 +51,7 @@ class Handler extends ExceptionHandler
     public function report(Throwable $e): void
     {
         if ($e instanceof OAuthServerException || $e instanceof AuthenticationException) {
-            if (false) {
-                response()->json('Unauthorized', 401);
-            } else {
-                if ($e instanceof OAuthServerException) {
-                    response()->json('Unauthorized', 401);
-                }
-            }
+            return;
         }
 
         parent::report($e);
@@ -70,6 +66,10 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception): Response
     {
+        if ($exception instanceof OAuthServerException || $exception instanceof AuthenticationException) {
+            return $this->errorResponse('Unauthenticated.', null, 401);
+        }
+
         if ($exception instanceof ThrottleRequestsException) {
             if ($exception->getHeaders()['Retry-After'] > 60) {
                 return $this->errorResponse(
