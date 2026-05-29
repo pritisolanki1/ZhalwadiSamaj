@@ -32,7 +32,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Health check endpoint for Railway deployment
+// Health check endpoint for deployment monitoring.
 Route::get('/health', function () {
     return response()->json([
         'status' => 'OK',
