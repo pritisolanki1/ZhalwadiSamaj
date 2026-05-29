@@ -8,6 +8,7 @@ use App\Models\UserForgotPasswordToken;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -249,6 +250,10 @@ class AuthController extends ApiController
             // ]);
 
             // return $this->successResponse('Login Successfully', array_merge($user, $token));
+        } catch (QueryException $e) {
+            report($e);
+
+            return $this->errorResponse('Database connection unavailable. Please try again.', null, 503);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
