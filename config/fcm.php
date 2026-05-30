@@ -1,15 +1,13 @@
 <?php
 
 return [
-    'driver'      => env('FCM_PROTOCOL', 'http'),
-    'log_enabled' => false,
+    'project_id' => env('FIREBASE_PROJECT_ID'),
 
-    'http' => [
-        'server_key'       => env('FCM_SERVER_KEY', 'Your FCM server key'),
-        'sender_id'        => env('FCM_SENDER_ID', 'Your sender id'),
-        'server_send_url'  => 'https://fcm.googleapis.com/fcm/send',
-        'server_group_url' => 'https://android.googleapis.com/gcm/notification',
-        'timeout'          => 30.0,
-        // in second
-    ],
+    'credentials_path' => storage_path('app/firebase/firebase.json'),
+
+    'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
+
+    'endpoint' => 'https://fcm.googleapis.com/v1/projects/%s/messages:send',
+
+    'timeout' => env('FCM_HTTP_TIMEOUT', 30),
 ];

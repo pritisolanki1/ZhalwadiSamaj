@@ -1,15 +1,11 @@
 <?php
 
+use App\Services\FirebaseNotificationService;
 use App\Models\Member;
 use App\Models\Report;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
-use LaravelFCM\Facades\FCM;
-use LaravelFCM\Message\Exceptions\InvalidOptionsException;
-use LaravelFCM\Message\OptionsBuilder;
-use LaravelFCM\Message\PayloadDataBuilder;
-use LaravelFCM\Message\PayloadNotificationBuilder;
 
 function is_json($string): bool
 {
@@ -116,25 +112,9 @@ function makeLastImageValueSet($iData): bool|array|string
 function sendNotice($title, $body, $data = [], $user = [], $exclude_user = []): void
 {
     try {
-        Log::info('FCM enter');
-        $optionBuilder = new OptionsBuilder();
-        try {
-            $optionBuilder->setTimeToLive(60 * 20);
-        } catch (InvalidOptionsException $e) {
-        }
+        Log::info('Firebase notification dispatch started');
 
-        $notificationBuilder = new PayloadNotificationBuilder($title);
-        $notificationBuilder->setBody($body)->setSound('default');
-
-        $dataBuilder = new PayloadDataBuilder();
-        $dataBuilder->addData($data);
-
-        $option = $optionBuilder->build();
-        $notification = $notificationBuilder->build();
-        $data = $dataBuilder->build();
-
-        // You must change it to get your tokens
-        $tokens = Member::select('device_token');
+        $tokens = Member::query()->select('device_token');
 
         if (!empty($user)) {
             $tokens = $tokens->whereIn('id', $user);
@@ -150,34 +130,47 @@ function sendNotice($title, $body, $data = [], $user = [], $exclude_user = []): 
             ''
         )->groupBy('device_token')->get()->pluck('device_token')->toArray();
 
-        if (!empty($tokens)) {
-            Log::info('FCM total token count', [count($tokens)]);
-            $downstreamResponse = FCM::sendTo($tokens, $option, $notification, $data);
-            Log::info('FCM in number of success', [$downstreamResponse->numberSuccess()]);
-            Log::error('FCM in number of failure', [$downstreamResponse->numberFailure()]);
-            $downstreamResponse->numberModification();
+        if (empty($tokens)) {
+            Log::info('Firebase notification dispatch skipped because no device tokens were found');
 
-            // return Array - you must remove all this tokens in your database
-            Member::whereIn('device_token', $downstreamResponse->tokensToDelete())->update(['device_token' => null]);
-
-            // return Array (key : oldToken, value : new token - you must change the token in your database)
-            $downstreamResponse->tokensToModify();
-
-            // return Array - you should try to resend the message to the tokens in the array
-            if (!empty($downstreamResponse->tokensToRetry())) {
-                FCM::sendTo($downstreamResponse->tokensToRetry(), $option, $notification, $data);
-            }
-
-            // return Array (key:token, value:error) - in production you should remove from your database the tokens present in this array
-            if (!empty($downstreamResponse->tokensWithError())) {
-                Log::error('FCM in error', $downstreamResponse->tokensWithError());
-            }
-            //        $downstreamResponse->tokensWithError();
+            return;
         }
-        Log::info('FCM end');
+
+        Log::info('Firebase notification token count', ['count' => count($tokens)]);
+
+        $firebase = app(FirebaseNotificationService::class);
+        $success = 0;
+        $failure = 0;
+        $tokensToDelete = [];
+
+        foreach ($tokens as $token) {
+            $response = $firebase->sendPushNotification($token, $title, $body, $data);
+
+            if ($response['success'] ?? false) {
+                $success++;
+                continue;
+            }
+
+            $failure++;
+
+            if ($response['invalid_token'] ?? false) {
+                $tokensToDelete[] = $token;
+            }
+        }
+
+        if (!empty($tokensToDelete)) {
+            Member::whereIn('device_token', $tokensToDelete)->update(['device_token' => null]);
+        }
+
+        Log::info('Firebase notification dispatch completed', [
+            'success' => $success,
+            'failure' => $failure,
+            'invalid_tokens_removed' => count($tokensToDelete),
+        ]);
     } catch (\Throwable $e) {
-        Log::error('FCM notification failed', [
+        Log::error('Firebase notification failed', [
             'message' => strip_tags($e->getMessage()),
+            'trace' => $e->getTraceAsString(),
         ]);
     }
 }

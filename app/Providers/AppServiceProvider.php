@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\FirebaseNotificationService;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\Facades\Schema;
@@ -14,6 +15,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->singleton(FirebaseNotificationService::class);
     }
 
     /**

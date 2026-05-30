@@ -91,6 +91,7 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
     });
 
     Route::post('/update', [AuthController::class, 'update']);
+    Route::post('/device-token', [AuthController::class, 'updateDeviceToken']);
     Route::get('/user', [AuthController::class, 'user']);
 
     Route::group(['middleware' => ['role:Member']], function () {

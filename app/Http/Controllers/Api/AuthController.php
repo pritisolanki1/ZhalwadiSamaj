@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Passport\Client as OClient;
 use Throwable;
@@ -351,6 +352,34 @@ class AuthController extends ApiController
             auth()->user()->fill(['device_token' => ''])->save();
 
             return $this->successResponse('Successfully logged out');
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
+    public function updateDeviceToken(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'device_token' => 'required|string|max:4096',
+                'device_serial' => 'nullable|string|max:255',
+            ]);
+
+            $user = $request->user();
+            $user->device_token = $request->device_token;
+
+            if ($request->filled('device_serial')) {
+                $user->device_serial = $request->device_serial;
+            }
+
+            $user->save();
+
+            Log::info('Device token updated', [
+                'user_id' => $user->id,
+                'user_type' => get_class($user),
+            ]);
+
+            return $this->successResponse('Device token updated successfully');
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
