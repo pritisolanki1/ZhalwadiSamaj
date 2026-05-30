@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AnnouncementController;
+use App\Http\Controllers\Api\AppVersionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\CommitteeController;
@@ -48,6 +49,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/member_login', [AuthController::class, 'member_login']);
 // });
 Route::post('/login/refresh', [AuthController::class, 'refresh']);
+Route::get('/app/version', [AppVersionController::class, 'show']);
 
 Route::get('/addLoginUser', [MemberController::class, 'addLoginUser']);
 Route::get('/all', [GeneralController::class, 'index']);

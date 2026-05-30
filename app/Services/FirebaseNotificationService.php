@@ -32,6 +32,8 @@ class FirebaseNotificationService
             throw new RuntimeException('Firebase credentials file is missing.');
         }
 
+        $this->validateServiceAccountFile($credentialsPath);
+
         try {
             $credentials = new ServiceAccountCredentials(
                 [config('fcm.scope')],
@@ -231,6 +233,34 @@ class FirebaseNotificationService
     private function maskToken(string $token): string
     {
         return substr($token, 0, 8) . '...' . substr($token, -6);
+    }
+
+    private function validateServiceAccountFile(string $credentialsPath): void
+    {
+        $credentials = json_decode((string) file_get_contents($credentialsPath), true);
+        $requiredKeys = ['type', 'project_id', 'private_key', 'client_email'];
+
+        if (!is_array($credentials)) {
+            Log::error('Firebase credentials file is not valid JSON', [
+                'credentials_path' => $credentialsPath,
+            ]);
+
+            throw new RuntimeException('Firebase credentials file is not valid JSON.');
+        }
+
+        $missingKeys = array_values(array_filter($requiredKeys, function ($key) use ($credentials) {
+            return empty($credentials[$key]);
+        }));
+
+        if (!empty($missingKeys) || ($credentials['type'] ?? null) !== 'service_account') {
+            Log::error('Firebase credentials file is not a service account JSON', [
+                'credentials_path' => $credentialsPath,
+                'missing_keys' => $missingKeys,
+                'credential_type' => $credentials['type'] ?? null,
+            ]);
+
+            throw new RuntimeException('Firebase credentials file must be a service account JSON.');
+        }
     }
 
     private function maskPayloadToken(array $payload): array

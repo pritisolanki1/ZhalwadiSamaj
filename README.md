@@ -1,5 +1,8 @@
 https://www.getpostman.com/collections/82697de36b80484b07c0
 
+Forced app update implementation and testing notes:
+[FORCED_APP_UPDATE.md](FORCED_APP_UPDATE.md)
+
 Make Request=php artisan make:request NAMEOFFILE
 
 php artisan make:migration create_user_table --create=result
@@ -32,4 +35,3 @@ php artisan laravel-swagger:generate > public/docs/api-docs.json
 ==================================================================================================
 {BASE_URL}/api/docs
 ==================================================================================================
-
