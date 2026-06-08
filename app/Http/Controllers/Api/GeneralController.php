@@ -279,32 +279,58 @@ class GeneralController extends ApiController
             $members->whereNotNull('device_token')->where('device_token', '!=', '');
         }
 
-        if ($request->search_key && $searchValue = strtolower($request->search_value)) {
-            switch ($request->search_key) {
+        if ($request->search_value && $searchValue = strtolower($request->search_value)) {
+            $searchKey = $request->search_key ?: 'all';
+            switch ($searchKey) {
                 case 'name':
-                    $members->where(function ($q) use ($searchValue) {
-                        //                        $q->whereJsonContains('name->en', $searchValue)
-                        //                            ->orWhereJsonContains('name->gu', $searchValue);
-                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . $searchValue . '%']);
+                    $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
+                    $members->where(function ($q) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $q->whereRaw('LOWER(name) LIKE ?', ['%' . $token . '%']);
+                        }
                     });
                     break;
                 case 'unique_number':
-                    $members->where('unique_number', $searchValue);
+                    $members->where('unique_number', 'LIKE', '%' . $searchValue . '%');
                     break;
                 case 'native':
-                    $members->whereHas('nativePlace', function ($q) use ($searchValue) {
-                        $q->whereRaw('LOWER(native) LIKE ?', ['%' . $searchValue . '%']);
+                    $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
+                    $members->where(function ($q) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $q->whereHas('nativePlace', function ($q2) use ($token) {
+                                $q2->whereRaw('LOWER(native) LIKE ?', ['%' . $token . '%']);
+                            });
+                        }
                     });
                     break;
                 case 'profession':
-                    $members->where(function ($q) use ($searchValue) {
-                        //                        $q->whereJsonContains('profession->en', $searchValue)
-                        //                            ->orWhereJsonContains('profession->gu', $searchValue);
-                        $q->whereRaw('LOWER(profession) LIKE ?', ['%' . $searchValue . '%']);
+                    $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
+                    $members->where(function ($q) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $q->whereRaw('LOWER(profession) LIKE ?', ['%' . $token . '%']);
+                        }
+                    });
+                    break;
+                case 'all':
+                default:
+                    $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
+                    $members->where(function ($q) use ($tokens) {
+                        foreach ($tokens as $token) {
+                            $q->where(function ($q2) use ($token) {
+                                $q2->whereRaw('LOWER(name) LIKE ?', ['%' . $token . '%'])
+                                    ->orWhere('unique_number', 'LIKE', '%' . $token . '%')
+                                    ->orWhereHas('nativePlace', function ($q3) use ($token) {
+                                        $q3->whereRaw('LOWER(native) LIKE ?', ['%' . $token . '%']);
+                                    })
+                                    ->orWhereRaw('LOWER(profession) LIKE ?', ['%' . $token . '%']);
+                            });
+                        }
                     });
                     break;
             }
         }
+
+        $members->orderBy('unique_number');
 
         if ($request->filter_by_expired_member || $request->filter_by_status || $request->filter_by_status == '0') {
             $members = $members->get();

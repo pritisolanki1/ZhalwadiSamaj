@@ -12,7 +12,7 @@ class SearchMemberRequest extends FormRequest
             'length'                => ['filled'],
             'search_key'            => [
                 'filled',
-                'in:name,unique_number,native,profession',
+                'in:name,unique_number,native,profession,all',
             ],
             'search_value'          => ['filled'],
             'filter_by_blood_group' => ['filled'],
