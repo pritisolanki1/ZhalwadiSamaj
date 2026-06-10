@@ -25,7 +25,7 @@ class MemberController extends ApiController
     {
         try {
             if ($request->has('page') && $request->has('length')) {
-                $length = $request->integer('length', 50);
+                $length = (int)$request->input('length', 50);
 
                 $members = Member::loadRelation()
                     ->whereNull('head_of_the_family_id')
