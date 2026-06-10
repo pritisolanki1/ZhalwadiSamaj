@@ -33,12 +33,12 @@ class NativePlacesController extends ApiController
     public function update(NativePlacesStoreRequest $request, $id): JsonResponse
     {
         try {
-            if (!NativePlace::find($id)) {
+            $nativePlace = NativePlace::find($id);
+            if (!$nativePlace) {
                 throw new Exception('NativePlace not found');
             }
             $request->validated();
-            $updatedFiled = $request->all();
-            $nativePlace = NativePlace::find($id)->fill($updatedFiled)->save();
+            $nativePlace->fill($request->all())->save();
 
             return $this->successResponse('NativePlace Updated', NativePlaceResource::make($nativePlace));
         } catch (Exception $e) {
@@ -49,12 +49,12 @@ class NativePlacesController extends ApiController
     public function destroy($id): JsonResponse
     {
         try {
-            $data = NativePlace::find($id)->delete();
-            if (!$data) {
-                return $this->errorResponse('NativePlace not found/it is already been deleted', $data, 400);
-            } else {
-                return $this->successResponse('NativePlace deleted', null, 201);
+            $nativePlace = NativePlace::find($id);
+            if (!$nativePlace) {
+                return $this->errorResponse('NativePlace not found/it is already been deleted', null, 400);
             }
+            $nativePlace->delete();
+            return $this->successResponse('NativePlace deleted', null, 201);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
