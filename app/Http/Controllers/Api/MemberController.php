@@ -21,9 +21,40 @@ class MemberController extends ApiController
 {
     use MemberTraits;
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
+            if ($request->has('page') && $request->has('length')) {
+                $length = $request->integer('length', 50);
+
+                $members = Member::loadRelation()
+                    ->whereNull('head_of_the_family_id')
+                    ->orderByRaw('CAST(unique_number AS UNSIGNED) ASC')
+                    ->paginate($length);
+
+                $members->getCollection()->transform(function ($value) {
+                    if ($value->head_of_the_family_id == null) {
+                        $value->relation_type = [
+                            'en' => 'Self',
+                            'gu' => 'પોતે',
+                        ];
+                    }
+                    return $value;
+                });
+
+                return response()->json([
+                    'status' => 'Success',
+                    'message' => 'Members List',
+                    'data' => $members->items(),
+                    'meta' => [
+                        'last_page' => $members->lastPage(),
+                        'current_page' => $members->currentPage(),
+                        'total' => $members->total(),
+                        'per_page' => (int)$members->perPage(),
+                    ],
+                ]);
+            }
+
             $member = $this->getMember();
 
             return $this->successResponse('Members List', $member);
