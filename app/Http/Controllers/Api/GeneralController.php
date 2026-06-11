@@ -331,15 +331,22 @@ class GeneralController extends ApiController
         }
 
         if ($request->search_value && $searchValue = strtolower($request->search_value)) {
-            $firstToken = strtok($searchValue, ' ');
-            $members->orderByRaw(
-                'CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END',
-                [$firstToken . '%']
-            );
-            $members->orderByRaw(
-                'CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END',
-                ['%' . $searchValue . '%']
-            );
+            $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
+            $firstToken = $tokens[0] ?? $searchValue;
+            $members->orderByRaw("
+                CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END,
+                CASE
+                    WHEN LOWER(name) LIKE ? THEN 0
+                    WHEN relation_id IN (SELECT id FROM members WHERE LOWER(name) LIKE ?) THEN 1
+                    WHEN father_id IN (SELECT id FROM members WHERE LOWER(name) LIKE ?) THEN 2
+                    ELSE 3
+                END
+            ", [
+                $firstToken . '%',
+                '%' . $searchValue . '%',
+                '%' . $searchValue . '%',
+                '%' . $searchValue . '%',
+            ]);
         }
         $members->orderBy('unique_number');
 
