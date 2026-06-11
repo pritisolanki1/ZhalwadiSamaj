@@ -333,27 +333,27 @@ class GeneralController extends ApiController
         if ($request->search_value && $searchValue = strtolower($request->search_value)) {
             $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
             $firstToken = $tokens[0] ?? $searchValue;
-            $allMatch = [];
-            $allBind = [];
-            foreach ($tokens as $token) {
-                $allMatch[] = 'LOWER(name) LIKE ?';
-                $allBind[] = '%' . $token . '%';
-            }
-            $allTokensSql = implode(' AND ', $allMatch);
+            $forwardLike = '%' . $searchValue . '%';
+            $reverseLike = count($tokens) > 1
+                ? '%' . implode(' ', array_reverse($tokens)) . '%'
+                : $forwardLike;
             $members->orderByRaw("
                 CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END,
                 CASE
-                    WHEN {$allTokensSql} THEN 0
-                    WHEN relation_id IN (SELECT id FROM members WHERE {$allTokensSql}) THEN 1
-                    WHEN father_id IN (SELECT id FROM members WHERE {$allTokensSql}) THEN 2
+                    WHEN LOWER(name) LIKE ? OR LOWER(name) LIKE ? THEN 0
+                    WHEN relation_id IN (SELECT id FROM members WHERE LOWER(name) LIKE ? OR LOWER(name) LIKE ?) THEN 1
+                    WHEN father_id IN (SELECT id FROM members WHERE LOWER(name) LIKE ? OR LOWER(name) LIKE ?) THEN 2
                     ELSE 3
                 END
-            ", array_merge(
-                ['%' . $firstToken . '%'],
-                $allBind,
-                $allBind,
-                $allBind,
-            ));
+            ", [
+                '%' . $firstToken . '%',
+                $forwardLike,
+                $reverseLike,
+                $forwardLike,
+                $reverseLike,
+                $forwardLike,
+                $reverseLike,
+            ]);
         }
         $members->orderBy('unique_number');
 
