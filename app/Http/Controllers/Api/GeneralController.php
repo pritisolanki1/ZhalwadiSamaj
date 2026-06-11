@@ -343,15 +343,13 @@ class GeneralController extends ApiController
             $members->orderByRaw("
                 CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END,
                 CASE
-                    WHEN id IN (SELECT id FROM members WHERE {$allTokensSql} AND (head_of_the_family_id IS NULL OR head_of_the_family_id = '')) THEN 0
-                    WHEN relation_id IN (SELECT id FROM members WHERE {$allTokensSql} AND (head_of_the_family_id IS NULL OR head_of_the_family_id = '')) THEN 1
-                    WHEN father_id IN (SELECT id FROM members WHERE {$allTokensSql} AND (head_of_the_family_id IS NULL OR head_of_the_family_id = '')) THEN 2
-                    WHEN {$allTokensSql} THEN 3
-                    ELSE 4
+                    WHEN {$allTokensSql} THEN 0
+                    WHEN relation_id IN (SELECT id FROM members WHERE {$allTokensSql}) THEN 1
+                    WHEN father_id IN (SELECT id FROM members WHERE {$allTokensSql}) THEN 2
+                    ELSE 3
                 END
             ", array_merge(
                 ['%' . $firstToken . '%'],
-                $allBind,
                 $allBind,
                 $allBind,
                 $allBind,
