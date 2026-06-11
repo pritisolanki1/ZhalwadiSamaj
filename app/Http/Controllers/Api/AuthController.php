@@ -294,12 +294,12 @@ class AuthController extends ApiController
 
     public function member_login(Request $request): JsonResponse
     {
-        try {
-            $request->validate([
-                'phone' => 'required|regex:/^[1-9]{1}[0-9]{9}/',
-                'password' => 'required|string',
-            ]);
+        $request->validate([
+            'phone' => 'required|regex:/^[1-9]{1}[0-9]{9}/',
+            'password' => 'required|string',
+        ]);
 
+        try {
             $credentials = request([
                 'phone',
                 'password',
