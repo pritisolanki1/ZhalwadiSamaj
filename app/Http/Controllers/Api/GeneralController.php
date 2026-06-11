@@ -330,6 +330,17 @@ class GeneralController extends ApiController
             }
         }
 
+        if ($request->search_value && $searchValue = strtolower($request->search_value)) {
+            $firstToken = strtok($searchValue, ' ');
+            $members->orderByRaw(
+                'CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END',
+                [$firstToken . '%']
+            );
+            $members->orderByRaw(
+                'CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END',
+                ['%' . $searchValue . '%']
+            );
+        }
         $members->orderBy('unique_number');
 
         if ($request->filter_by_expired_member || $request->filter_by_status || $request->filter_by_status == '0') {
