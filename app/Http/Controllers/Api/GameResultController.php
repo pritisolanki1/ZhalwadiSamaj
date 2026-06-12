@@ -87,7 +87,7 @@ class GameResultController extends ApiController
                 $image = $request->file('images');
                 $oldImage = $gameResult->getRawOriginal('image');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $image->extension();
-                $image->move(public_path(Config::get('general.image_path.game_result.image')), $name);
+                processAndStoreImage($image, public_path(Config::get('general.image_path.game_result.image')), $name);
 
                 $oldImagePath = public_path(Config::get('general.image_path.game_result.image') . $oldImage);
                 if (!empty($oldImage) && File::exists($oldImagePath) && File::isFile($oldImagePath)) {

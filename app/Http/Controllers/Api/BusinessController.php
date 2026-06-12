@@ -73,7 +73,7 @@ class BusinessController extends ApiController
                 $logos = $request->file('logo');
                 foreach ($logos as $logo) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $logo->extension();
-                    $logo->move('image/Business/logo/', $name);
+                    processAndStoreImage($logo, public_path('image/Business/logo/'), $name);
                     $insertFiled['logo'][] = $name;
                 }
                 $this->deleteImages($existingLogos, 'image/Business/logo/');
@@ -83,7 +83,7 @@ class BusinessController extends ApiController
                 $sliders = $request->file('slider');
                 foreach ($sliders as $slider) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $slider->extension();
-                    $slider->move('image/Business/slider/', $name);
+                    processAndStoreImage($slider, public_path('image/Business/slider/'), $name);
                     $insertFiled['slider'][] = $name;
                 }
                 $this->deleteImages($existingSliders, 'image/Business/slider/');
@@ -93,7 +93,7 @@ class BusinessController extends ApiController
                 $gallerys = $request->file('gallery');
                 foreach ($gallerys as $gallery) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $gallery->extension();
-                    $gallery->move('image/Business/gallery/', $name);
+                    processAndStoreImage($gallery, public_path('image/Business/gallery/'), $name);
                     $insertFiled['gallery'][] = $name;
                 }
                 $this->deleteImages($existingGallery, 'image/Business/gallery/');

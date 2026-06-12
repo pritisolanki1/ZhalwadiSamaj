@@ -223,33 +223,20 @@ class MemberController extends ApiController
                 $avatar = $request->file('avatar');
                 $oldAvatar = $Member->getRawOriginal('avatar');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
-                $avatar->move(public_path(Config::get('general.image_path.member.avatar')), $name);
+                processAndStoreImage($avatar, public_path(Config::get('general.image_path.member.avatar')), $name);
                 $this->deleteMemberAvatarIfExists($oldAvatar);
 
                 $insertFiled['avatar'] = $name;
             }
-            // if ( $request->hasFile('slider') ) {
-            //     $sliders = $request->file('slider');
-            //     foreach ( $sliders as $slider ) {
-            //         $name = md5(RandomStringGenerator(16) . time()) . '.' . $slider->extension();
-            //    // $slider->move(public_path(Config::get('general.image_path.member.slider')) , $name);
-
-            //         $slider->move('image/Member/slider/' , $name);
-            //         $insertFiled['slider'][] = $name;
-            //     }
-            // }
 
             if ($request->hasFile('slider')) {
+                $this->deleteMemberSliderIfExists($Member);
                 $sliders = $request->file('slider');
                 foreach ($sliders as $slider) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $slider->extension();
-                    $slider->move(public_path(Config::get('general.image_path.member.slider')), $name);
+                    processAndStoreImage($slider, public_path(Config::get('general.image_path.member.slider')), $name);
                     $insertFiled['slider'][] = $name;
                 }
-            }
-            foreach ($Member->slider as $slider1) {
-                $array = explode('/', $slider1);
-                $insertFiled['slider'][] = end($array);
             }
             // $Member->avatar = !empty($insertFiled['avatar']) ? $insertFiled['avatar'] : $Member->avatar;
             // $Member->slider = !empty($insertFiled['slider']) ? $insertFiled['slider'] : $Member->slider;
@@ -278,6 +265,24 @@ class MemberController extends ApiController
 
         if (File::exists($avatarPath) && File::isFile($avatarPath)) {
             File::delete($avatarPath);
+        }
+    }
+
+    private function deleteMemberSliderIfExists($member): void
+    {
+        $sliders = jsonDecode($member->getRawOriginal('slider'));
+        if (!is_array($sliders)) {
+            return;
+        }
+
+        foreach ($sliders as $slider) {
+            if (empty($slider)) {
+                continue;
+            }
+            $sliderPath = public_path(Config::get('general.image_path.member.slider') . $slider);
+            if (File::exists($sliderPath) && File::isFile($sliderPath)) {
+                File::delete($sliderPath);
+            }
         }
     }
 

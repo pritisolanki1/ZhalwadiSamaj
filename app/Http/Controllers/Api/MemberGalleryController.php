@@ -84,7 +84,7 @@ class MemberGalleryController extends ApiController
                 $images = $request->file('image');
                 foreach ($images as $image) {
                     $name = md5(RandomStringGenerator(16) . time()) . '.' . $image->extension();
-                    $image->move(public_path(Config::get('general.image_path.member_gallery.images')), $name);
+                    processAndStoreImage($image, public_path(Config::get('general.image_path.member_gallery.images')), $name);
                     $insertFiled['images'][] = $name;
                 }
             }

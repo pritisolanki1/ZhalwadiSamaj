@@ -101,7 +101,7 @@ class TeamController extends ApiController
                 $avatar = $request->file('avatar');
                 $oldAvatar = $Team->getRawOriginal('avatar');
                 $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
-                $avatar->move(public_path(Config::get('general.image_path.team.avatar')), $name);
+                processAndStoreImage($avatar, public_path(Config::get('general.image_path.team.avatar')), $name);
 
                 $oldAvatarPath = public_path(Config::get('general.image_path.team.avatar') . $oldAvatar);
                 if (!empty($oldAvatar) && File::exists($oldAvatarPath) && File::isFile($oldAvatarPath)) {

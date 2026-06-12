@@ -80,7 +80,7 @@ class JobController extends ApiController
             $avatar = $request->file('avatar');
             $oldAvatar = $Job->getRawOriginal('avatar');
             $name = md5(RandomStringGenerator(16) . time()) . '.' . $avatar->extension();
-            $avatar->move(public_path(Config::get('general.image_path.job.avatar')), $name);
+            processAndStoreImage($avatar, public_path(Config::get('general.image_path.job.avatar')), $name);
 
             $oldAvatarPath = public_path(Config::get('general.image_path.job.avatar') . $oldAvatar);
             if (!empty($oldAvatar) && File::exists($oldAvatarPath) && File::isFile($oldAvatarPath)) {

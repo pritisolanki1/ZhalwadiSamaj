@@ -225,3 +225,32 @@ function getImageUrlIfExists($imagePath, $configPath): string
     // Return empty string if file doesn't exist
     return '';
 }
+
+function processAndStoreImage($file, $destinationPath, $name, $maxWidth = 1920, $quality = 80): void
+{
+    try {
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (in_array($extension, ['svg', 'gif'])) {
+            $file->move($destinationPath, $name);
+            return;
+        }
+
+        if (!File::exists($destinationPath)) {
+            File::makeDirectory($destinationPath, 0755, true);
+        }
+
+        $img = \Image::make($file);
+
+        if ($img->width() > $maxWidth) {
+            $img->resize($maxWidth, null, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+        }
+
+        $img->save($destinationPath . $name, $quality);
+    } catch (\Exception $e) {
+        $file->move($destinationPath, $name);
+    }
+}

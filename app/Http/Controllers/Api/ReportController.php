@@ -56,7 +56,7 @@ class ReportController extends ApiController
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $name = md5(RandomStringGenerator(16) . time()) . '.' . $image->extension();
-            $image->move(public_path(Config::get('general.image_path.report.image')), $name);
+            processAndStoreImage($image, public_path(Config::get('general.image_path.report.image')), $name);
             $report->image = $name;
         }
         $gallery = null;
