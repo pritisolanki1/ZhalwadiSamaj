@@ -291,7 +291,21 @@ class GeneralController extends ApiController
                     });
                     break;
                 case 'unique_number':
-                    $members->where('unique_number', 'LIKE', '%' . $searchValue . '%');
+                    $members->where(function ($q) use ($searchValue) {
+                        $q->where('unique_number', 'LIKE', '%' . $searchValue . '%')
+                            ->orWhereIn('head_of_the_family_id', function ($q2) use ($searchValue) {
+                                $q2->select('id')
+                                    ->from('members')
+                                    ->where('unique_number', 'LIKE', '%' . $searchValue . '%');
+                            })
+                            ->orWhereIn('head_of_the_family_id', function ($q2) use ($searchValue) {
+                                $q2->select('head_of_the_family_id')
+                                    ->from('members')
+                                    ->where('unique_number', 'LIKE', '%' . $searchValue . '%')
+                                    ->whereNotNull('head_of_the_family_id')
+                                    ->where('head_of_the_family_id', '!=', '');
+                            });
+                    });
                     break;
                 case 'native':
                     $tokens = preg_split('/\s+/', $searchValue, -1, PREG_SPLIT_NO_EMPTY);
