@@ -200,6 +200,7 @@ class MemberController extends ApiController
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         } catch (Throwable $e) {
+            return $this->errorResponse($e->getMessage());
         }
     }
 

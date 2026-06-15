@@ -42,7 +42,7 @@ trait MemberScope
     {
         return $query->where(function ($query) {
             $query->whereNull('head_of_the_family_id')
-                ->orWhere('head_of_the_family_id', '<>', '');
+                ->orWhere('head_of_the_family_id', '=' , '');
         });
     }
 

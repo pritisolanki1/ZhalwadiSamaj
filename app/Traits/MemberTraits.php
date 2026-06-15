@@ -543,51 +543,64 @@ trait MemberTraits
     /**
      * @throws Throwable
      */
-    public function delMember($member_id): array
+    public function delMember($member_id, array &$visitedMemberIds = [], bool $isRootCall = true): array
     {
-        DB::beginTransaction();
+        if ($isRootCall) {
+            DB::beginTransaction();
+        }
         try {
+            if (isset($visitedMemberIds[$member_id])) {
+                Log::info('delMember skipped already visited member:- ' . $member_id);
+                return ['message' => 'Member Successfully Deleted'];
+            }
+
+            $visitedMemberIds[$member_id] = true;
             $iMember = Member::find($member_id);
             if ($iMember !== null) {
                 Log::info('First Function start:- ' . $iMember->id);
                 // Self Side Check
                 if ($iMember->head_of_the_family_id == '') {
-                    $iAllMember = Member::headOfFamily($iMember->id)->pluck('id')->toArray();
+                    $iAllMember = Member::headOfFamily($iMember->id)
+                        ->where('id', '<>', $iMember->id)
+                        ->pluck('id')
+                        ->toArray();
 
                     Log::info('all data:-[' . implode(', ', $iAllMember) . ']');
 
                     foreach ($iAllMember as $member) {
-                        $this->delMember($member);
+                        $this->delMember($member, $visitedMemberIds, false);
                     }
                 }
 
                 // Father Side Check
                 if ($iMember->gender == 'Male') {
                     $iChildFatherData = Member::father($iMember->id)->nullHeadOfTheFamily()
+                        ->where('id', '<>', $iMember->id)
                         ->pluck('id')->toArray();
 
                     Log::info('male data:- [' . implode(', ', $iChildFatherData) . ']');
                     if (!empty($iChildFatherData)) {
                         foreach ($iChildFatherData as $key => $iMemberMale) {
-                            $this->delMember($iMemberMale);
+                            $this->delMember($iMemberMale, $visitedMemberIds, false);
                         }
                     }
 
-                    if (!empty($iMember->relation_id)) {
-                        $this->delMember($iMember->relation_id);
+                    if (!empty($iMember->relation_id) && !isset($visitedMemberIds[$iMember->relation_id])) {
+                        $this->delMember($iMember->relation_id, $visitedMemberIds, false);
                     }
                 }
 
                 // Mother Side Check
                 if ($iMember->gender == 'Female') {
                     $iChildMotherData = Member::mother($iMember->id)->nullHeadOfTheFamily()
+                        ->where('id', '<>', $iMember->id)
                         ->pluck('id')
                         ->toArray();
 
                     Log::info('female data:- [' . implode(', ', $iChildMotherData) . ']');
 
                     foreach ($iChildMotherData as $iMemberFemale) {
-                        $this->delMember($iMemberFemale);
+                        $this->delMember($iMemberFemale, $visitedMemberIds, false);
                     }
 
                     if (!empty($iMember->relation_id)) {
@@ -598,12 +611,16 @@ trait MemberTraits
                 Member::destroy($iMember->id);
                 Log::info('First Function end:- ' . $iMember->id);
             }
-            DB::commit();
+            if ($isRootCall) {
+                DB::commit();
+            }
             $iReturn['message'] = 'Member Successfully Deleted';
 
             return $iReturn;
         } catch (Throwable $e) {
-            DB::rollBack();
+            if ($isRootCall) {
+                DB::rollBack();
+            }
             throw $e;
         }
     }
