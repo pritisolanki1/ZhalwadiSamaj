@@ -366,6 +366,7 @@ class GeneralController extends ApiController
                 ? '%' . implode(' ', array_reverse($tokens)) . '%'
                 : $forwardLike;
             $members->orderByRaw("
+                CASE WHEN unique_number LIKE ? THEN 0 ELSE 1 END,
                 CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END,
                 CASE
                     WHEN LOWER(name) LIKE ? OR LOWER(name) LIKE ? THEN 0
@@ -374,6 +375,7 @@ class GeneralController extends ApiController
                     ELSE 3
                 END
             ", [
+                '%' . $searchValue . '%',
                 '%' . $firstToken . '%',
                 $forwardLike,
                 $reverseLike,
