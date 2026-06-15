@@ -332,7 +332,21 @@ class GeneralController extends ApiController
                         foreach ($tokens as $token) {
                             $q->where(function ($q2) use ($token) {
                                 $q2->whereRaw('LOWER(name) LIKE ?', ['%' . $token . '%'])
-                                    ->orWhere('unique_number', 'LIKE', '%' . $token . '%')
+                                    ->orWhere(function ($q3) use ($token) {
+                                        $q3->where('unique_number', 'LIKE', '%' . $token . '%')
+                                            ->orWhereIn('head_of_the_family_id', function ($q4) use ($token) {
+                                                $q4->select('id')
+                                                    ->from('members')
+                                                    ->where('unique_number', 'LIKE', '%' . $token . '%');
+                                            })
+                                            ->orWhereIn('head_of_the_family_id', function ($q4) use ($token) {
+                                                $q4->select('head_of_the_family_id')
+                                                    ->from('members')
+                                                    ->where('unique_number', 'LIKE', '%' . $token . '%')
+                                                    ->whereNotNull('head_of_the_family_id')
+                                                    ->where('head_of_the_family_id', '!=', '');
+                                            });
+                                    })
                                     ->orWhereHas('nativePlace', function ($q3) use ($token) {
                                         $q3->whereRaw('LOWER(native) LIKE ?', ['%' . $token . '%']);
                                     })
