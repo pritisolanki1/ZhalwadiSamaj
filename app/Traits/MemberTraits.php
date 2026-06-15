@@ -558,58 +558,30 @@ trait MemberTraits
             $iMember = Member::find($member_id);
             if ($iMember !== null) {
                 Log::info('First Function start:- ' . $iMember->id);
-                // Self Side Check
-                if ($iMember->head_of_the_family_id == '') {
-                    $iAllMember = Member::headOfFamily($iMember->id)
-                        ->where('id', '<>', $iMember->id)
+
+                $isHeadOfFamily = $iMember->head_of_the_family_id === null || $iMember->head_of_the_family_id === '';
+
+                if ($isHeadOfFamily) {
+                    $familyMemberIds = Member::where('head_of_the_family_id', $iMember->id)
+                        ->orWhere('id', $iMember->id)
                         ->pluck('id')
                         ->toArray();
 
-                    Log::info('all data:-[' . implode(', ', $iAllMember) . ']');
+                    Log::info('Head of family cascade delete members:- [' . implode(', ', $familyMemberIds) . ']');
 
-                    foreach ($iAllMember as $member) {
-                        $this->delMember($member, $visitedMemberIds, false);
-                    }
-                }
-
-                // Father Side Check
-                if ($iMember->gender == 'Male') {
-                    $iChildFatherData = Member::father($iMember->id)->nullHeadOfTheFamily()
-                        ->where('id', '<>', $iMember->id)
-                        ->pluck('id')->toArray();
-
-                    Log::info('male data:- [' . implode(', ', $iChildFatherData) . ']');
-                    if (!empty($iChildFatherData)) {
-                        foreach ($iChildFatherData as $key => $iMemberMale) {
-                            $this->delMember($iMemberMale, $visitedMemberIds, false);
+                    foreach ($familyMemberIds as $memberId) {
+                        if (!isset($visitedMemberIds[$memberId])) {
+                            $this->delMember($memberId, $visitedMemberIds, false);
                         }
                     }
+                } else {
+                    // Remove any spouse pointer to this member, but do not delete other family members
+                    Member::where('relation_id', $iMember->id)->update(['relation_id' => null]);
 
-                    if (!empty($iMember->relation_id) && !isset($visitedMemberIds[$iMember->relation_id])) {
-                        $this->delMember($iMember->relation_id, $visitedMemberIds, false);
-                    }
+                    $this->otherTableMemberDel($iMember->id);
+                    Member::destroy($iMember->id);
+                    Log::info('Deleted member only:- ' . $iMember->id);
                 }
-
-                // Mother Side Check
-                if ($iMember->gender == 'Female') {
-                    $iChildMotherData = Member::mother($iMember->id)->nullHeadOfTheFamily()
-                        ->where('id', '<>', $iMember->id)
-                        ->pluck('id')
-                        ->toArray();
-
-                    Log::info('female data:- [' . implode(', ', $iChildMotherData) . ']');
-
-                    foreach ($iChildMotherData as $iMemberFemale) {
-                        $this->delMember($iMemberFemale, $visitedMemberIds, false);
-                    }
-
-                    if (!empty($iMember->relation_id)) {
-                        Member::where('id', $iMember->relation_id)->update(['relation_id' => null]);
-                    }
-                }
-                $this->otherTableMemberDel($iMember->id);
-                Member::destroy($iMember->id);
-                Log::info('First Function end:- ' . $iMember->id);
             }
             if ($isRootCall) {
                 DB::commit();
