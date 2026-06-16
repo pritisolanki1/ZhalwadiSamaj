@@ -20,7 +20,7 @@ class MemberStoreRequest extends BaseFormRequest
             'gender'              => 'required|in:Male,Female',
             'birth_date'          => 'date_format:d-m-Y',
             'unique_number' => 'sometimes|nullable|unique:members,unique_number,' . request()->id,
-            'phone' => 'filled|regex:/^[5-9]{1}[0-9]{9}/|unique:members,phone,' . request()->id,
+            'phone' => 'nullable|regex:/^[5-9]{1}[0-9]{9}/|unique:members,phone,' . request()->id,
             'email' => 'sometimes|nullable|unique:members,email,' . request()->id,
             'blood_group'         => [
                 Rule::in([
