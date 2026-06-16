@@ -141,8 +141,8 @@ class AuthController extends ApiController
                 $request_validation = [
                     'user_id' => 'required|exists:members,id',
                     'name' => 'required',
-                    'phone' => 'filled|nullable|regex:/^[1-9]{1}[0-9]{9}/|unique:members,phone,' . $request->user_id,
-                    'email' => 'filled|nullable|unique:members,email,' . $request->user_id,
+                    'phone' => 'nullable|regex:/^[1-9]{1}[0-9]{9}/|unique:members,phone,' . $request->user_id,
+                    'email' => 'nullable|unique:members,email,' . $request->user_id,
                     'new_password' => 'required',
                     'status' => 'required',
                     'type' => 'required|string|in:user,member',
@@ -163,8 +163,8 @@ class AuthController extends ApiController
                 $request_validation = [
                     'user_id' => 'required|exists:users,id',
                     'name' => 'required',
-                    'phone' => 'filled|nullable|regex:/^[1-9]{1}[0-9]{9}/|unique:users,phone,' . $request->user_id,
-                    'email' => 'filled|nullable|unique:users,email,' . $request->user_id,
+                    'phone' => 'nullable|regex:/^[1-9]{1}[0-9]{9}/|unique:users,phone,' . $request->user_id,
+                    'email' => 'nullable|unique:users,email,' . $request->user_id,
                     'new_password' => 'required',
                     'status' => 'required',
                     'type' => 'required|string|in:user,member',
