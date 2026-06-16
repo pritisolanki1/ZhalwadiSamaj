@@ -77,9 +77,21 @@ trait MemberRelations
         ])->orderBy('birth_date', 'ASC')->loadRelation();
     }
 
+    public function childrenByFather(): HasMany
+    {
+        return $this->hasMany(self::class, 'father_id', 'id')
+            ->orderBy('birth_date', 'ASC')
+            ->loadRelation();
+    }
+
     public function childrenRecursive(): HasMany
     {
         return $this->children()->with('spouseRecursive');
+    }
+
+    public function childrenByFatherRecursive(): HasMany
+    {
+        return $this->childrenByFather()->with('spouseRecursive');
     }
 
     public function spouseRecursive(): HasMany

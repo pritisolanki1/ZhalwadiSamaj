@@ -78,7 +78,7 @@ trait MemberTraits
 
                     //  Set Son And Daughter
                     foreach ($iMemberList as $iKey2 => $iMember2) {
-                        if ($iMember2->father_id == $head_of_family_id && $iMember2->mother_id == $head_of_family_wife_id) {
+                        if ($iMember2->father_id == $head_of_family_id && (empty($head_of_family_wife_id) || $iMember2->mother_id == $head_of_family_wife_id)) {
                             //  Son Data
                             if ($iMember2->gender == 'Male') {
                                 $iMember2->relation_type = [
@@ -101,7 +101,7 @@ trait MemberTraits
 
                                         //  Set Grand Son And Grand Daughter
                                         foreach ($iMemberList as $iKey4 => $iMember4) {
-                                            if ($iMember4->father_id == $head_of_family_Son_id && $iMember4->mother_id == $head_of_family_Daughter_in_law_id) {
+                                            if ($iMember4->father_id == $head_of_family_Son_id && (empty($head_of_family_Daughter_in_law_id) || $iMember4->mother_id == $head_of_family_Daughter_in_law_id)) {
                                                 //  Grand Son Data
                                                 if ($iMember4->gender == 'Male') {
                                                     $iMember4->relation_type = [
@@ -123,7 +123,7 @@ trait MemberTraits
                                                             $iMember5Children = [];
                                                             //  Set GreatGrand Son And GreatGrand Daughter
                                                             foreach ($iMemberList as $iKey6 => $iMember6) {
-                                                                if ($iMember6->father_id == $head_of_family_Grand_Son_id && $iMember6->mother_id == $head_of_family_Grand_Daughter_in_law_id) {
+                                                                if ($iMember6->father_id == $head_of_family_Grand_Son_id && (empty($head_of_family_Grand_Daughter_in_law_id) || $iMember6->mother_id == $head_of_family_Grand_Daughter_in_law_id)) {
                                                                     //  GreatGrand Son Data
                                                                     if ($iMember6->gender == 'Male') {
                                                                         $iMember6->relation_type = [
@@ -206,6 +206,117 @@ trait MemberTraits
                 }
             }
 
+            //  Fallback: When no wife/mother found, process children directly by father_id
+            if (empty($head_of_family_wife_id)) {
+                $directFatherChildren = [];
+                foreach ($iMemberList as $iKey2 => $iMember2) {
+                    if ($iMember2->father_id == $head_of_family_id) {
+                        if ($iMember2->gender == 'Male') {
+                            $iMember2->relation_type = [
+                                'en' => 'Son',
+                                'gu' => 'દીકરો',
+                            ];
+                            $sonId = $iMember2->id;
+                            $diLId = '';
+                            $iMember2Children = [];
+
+                            // Find Daughter-in-law (wife of son)
+                            foreach ($iMemberList as $iKey3 => $iMember3) {
+                                if ($iMember3->relation_id == $sonId && $iMember3->gender == 'Female') {
+                                    $diLId = $iMember3->id;
+                                    $iMember3->relation_type = [
+                                        'en' => 'Daughter-in-law',
+                                        'gu' => 'પુત્રવધૂ',
+                                    ];
+                                    $iMember3Children = [];
+
+                                    // Find Grandchildren
+                                    foreach ($iMemberList as $iKey4 => $iMember4) {
+                                        if ($iMember4->father_id == $sonId && (empty($diLId) || $iMember4->mother_id == $diLId)) {
+                                            if ($iMember4->gender == 'Male') {
+                                                $iMember4->relation_type = [
+                                                    'en' => 'Grandson',
+                                                    'gu' => 'પૌત્ર',
+                                                ];
+                                                $grandSonId = $iMember4->id;
+                                                $grandDiLId = '';
+                                                $iMember3Children[] = $iMember4;
+
+                                                // Find Grand-daughter-in-law
+                                                foreach ($iMemberList as $iKey5 => $iMember5) {
+                                                    if ($iMember5->relation_id == $grandSonId && $iMember5->gender == 'Female') {
+                                                        $grandDiLId = $iMember5->id;
+                                                        $iMember5->relation_type = [
+                                                            'en' => 'Grand-daughter-in-law',
+                                                            'gu' => 'વહુ-વહુ',
+                                                        ];
+                                                        $iMember5Children = [];
+
+                                                        // Find Great-grandchildren
+                                                        foreach ($iMemberList as $iKey6 => $iMember6) {
+                                                            if ($iMember6->father_id == $grandSonId && (empty($grandDiLId) || $iMember6->mother_id == $grandDiLId)) {
+                                                                if ($iMember6->gender == 'Male') {
+                                                                    $iMember6->relation_type = [
+                                                                        'en' => 'Great grandson',
+                                                                        'gu' => 'પ્રપૌત્ર',
+                                                                    ];
+                                                                    $iMember5Children[] = $iMember6;
+                                                                    unset($iMemberList[$iKey6]);
+                                                                } else {
+                                                                    if ($iMember6->gender == 'Female') {
+                                                                        $iMember6->relation_type = [
+                                                                            'en' => 'Great granddaughter',
+                                                                            'gu' => 'પપૌત્રી',
+                                                                        ];
+                                                                        $iMember5Children[] = $iMember6;
+                                                                        unset($iMemberList[$iKey6]);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        $iMember5->children = $iMember5Children;
+                                                        $iMember3Children[] = $iMember5;
+                                                        unset($iMemberList[$iKey5]);
+                                                    }
+                                                }
+                                                unset($iMemberList[$iKey4]);
+                                            } else {
+                                                if ($iMember4->gender == 'Female') {
+                                                    $iMember4->relation_type = [
+                                                        'en' => 'Granddaughter',
+                                                        'gu' => 'પૌત્રી',
+                                                    ];
+                                                    $iMember3Children[] = $iMember4;
+                                                    unset($iMemberList[$iKey4]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    $iMember3->children = $iMember3Children;
+                                    $iMember2Children[] = $iMember3;
+                                    unset($iMemberList[$iKey3]);
+                                }
+                            }
+                            $iMember2->children = $iMember2Children;
+                            $directFatherChildren[] = $iMember2;
+                            unset($iMemberList[$iKey2]);
+                        } else {
+                            if ($iMember2->gender == 'Female') {
+                                $iMember2->relation_type = [
+                                    'en' => 'Daughter',
+                                    'gu' => 'દીકરી',
+                                ];
+                                $directFatherChildren[] = $iMember2;
+                                unset($iMemberList[$iKey2]);
+                            }
+                        }
+                    }
+                }
+                foreach ($directFatherChildren as $child) {
+                    $iFamily[] = $child;
+                }
+            }
+
             //  Set Father
             if ($head_of_family_father_id !== null) {
                 foreach ($iMemberList as $iKey11 => $iMember11) {
@@ -235,7 +346,7 @@ trait MemberTraits
 
                         //  Set Son And Daughter
                         foreach ($iMemberList as $iKey222 => $iMember222) {
-                            if ($iMember222->father_id == $head_of_family_father_id && $iMember222->mother_id == $head_of_family_mother_id && $iMember222->id !== $head_of_family_id) {
+                            if ($iMember222->father_id == $head_of_family_father_id && (empty($head_of_family_mother_id) || $iMember222->mother_id == $head_of_family_mother_id) && $iMember222->id !== $head_of_family_id) {
                                 //  Son Data
                                 if ($iMember222->gender == 'Male') {
                                     $iMember222->relation_type = [
@@ -258,7 +369,7 @@ trait MemberTraits
 
                                             //  Set Grand Son And Grand Daughter
                                             foreach ($iMemberList as $iKey444 => $iMember444) {
-                                                if ($iMember444->father_id == $head_of_family_Son_id && $iMember444->mother_id == $head_of_family_Daughter_in_law_id) {
+                                                if ($iMember444->father_id == $head_of_family_Son_id && (empty($head_of_family_Daughter_in_law_id) || $iMember444->mother_id == $head_of_family_Daughter_in_law_id)) {
                                                     //  Grand Son Data
                                                     if ($iMember444->gender == 'Male') {
                                                         $iMember444->relation_type = [
@@ -280,7 +391,7 @@ trait MemberTraits
                                                                 $iMember555Children = [];
                                                                 //  Set GreatGrand Son And GreatGrand Daughter
                                                                 foreach ($iMemberList as $iKey666 => $iMember666) {
-                                                                    if ($iMember666->father_id == $head_of_family_Grand_Son_id && $iMember666->mother_id == $head_of_family_Grand_Daughter_in_law_id) {
+                                                                    if ($iMember666->father_id == $head_of_family_Grand_Son_id && (empty($head_of_family_Grand_Daughter_in_law_id) || $iMember666->mother_id == $head_of_family_Grand_Daughter_in_law_id)) {
                                                                         //  GreatGrand Son Data
                                                                         if ($iMember666->gender == 'Male') {
                                                                             $iMember666->relation_type = [
@@ -392,7 +503,7 @@ trait MemberTraits
 
                         //  Set Son And Daughter
                         foreach ($iMemberList as $iKey22222 => $iMember22222) {
-                            if ($iMember22222->father_id == $head_of_family_grand_father_id && $iMember22222->mother_id == $head_of_family_grand_mother_id && $iMember22222->id !== $head_of_family_father_id) {
+                            if ($iMember22222->father_id == $head_of_family_grand_father_id && (empty($head_of_family_grand_mother_id) || $iMember22222->mother_id == $head_of_family_grand_mother_id) && $iMember22222->id !== $head_of_family_father_id) {
                                 //  Son Data
                                 if ($iMember22222->gender == 'Male') {
                                     $iMember22222->relation_type = [
@@ -415,7 +526,7 @@ trait MemberTraits
 
                                             //  Set Grand Son And Grand Daughter
                                             foreach ($iMemberList as $iKey44444 => $iMember44444) {
-                                                if ($iMember44444->father_id == $head_of_family_Son_id && $iMember44444->mother_id == $head_of_family_Daughter_in_law_id) {
+                                                if ($iMember44444->father_id == $head_of_family_Son_id && (empty($head_of_family_Daughter_in_law_id) || $iMember44444->mother_id == $head_of_family_Daughter_in_law_id)) {
                                                     //  Grand Son Data
                                                     if ($iMember44444->gender == 'Male') {
                                                         $iMember44444->relation_type = [
@@ -437,7 +548,7 @@ trait MemberTraits
                                                                 $iMember55555Children = [];
                                                                 //  Set GreatGrand Son And GreatGrand Daughter
                                                                 foreach ($iMemberList as $iKey66666 => $iMember66666) {
-                                                                    if ($iMember66666->father_id == $head_of_family_Grand_Son_id && $iMember66666->mother_id == $head_of_family_Grand_Daughter_in_law_id) {
+                                                                    if ($iMember66666->father_id == $head_of_family_Grand_Son_id && (empty($head_of_family_Grand_Daughter_in_law_id) || $iMember66666->mother_id == $head_of_family_Grand_Daughter_in_law_id)) {
                                                                         //  GreatGrand Son Data
                                                                         if ($iMember66666->gender == 'Male') {
                                                                             $iMember66666->relation_type = [

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Member;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Log;
 
 class MemberList
 {
@@ -62,10 +63,42 @@ class MemberList
                 'gu' => 'પોતે',
             ];
             $this->checkWife($value->spouseRecursive);
+
+            // Fallback: if male member has no spouse, find children directly by father_id
+            if ($value->gender == 'Male' && (!$value->spouseRecursive || $value->spouseRecursive->isEmpty())) {
+                $this->checkChildrenByFather($value);
+            }
+
             $this->checkFather($value->parentRecursive);
 
             return $value;
         });
+    }
+
+    private function checkChildrenByFather($father): void
+    {
+        $children = Member::where('father_id', $father->id)
+            ->with('spouseRecursive')
+            ->orderBy('birth_date')
+            ->get();
+
+        if ($children && $children->isNotEmpty()) {
+            $children->each(function ($child) {
+                $this->familyMemberIds[] = $child->id;
+                if ($child->gender == 'Male') {
+                    $child->relation_type = [
+                        'en' => 'Son',
+                        'gu' => 'દીકરો',
+                    ];
+                    $this->checkDaughterInLaw($child->spouseRecursive);
+                } elseif ($child->gender == 'Female') {
+                    $child->relation_type = [
+                        'en' => 'Daughter',
+                        'gu' => 'દીકરી',
+                    ];
+                }
+            });
+        }
     }
 
     private function checkWife($wifeObject): void
