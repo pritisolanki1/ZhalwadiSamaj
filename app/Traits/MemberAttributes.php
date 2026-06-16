@@ -57,6 +57,16 @@ trait MemberAttributes
         return $value == null ? null : date('d-m-Y', strtotime($value));
     }
 
+    public function setPhoneAttribute($value): void
+    {
+        $this->attributes['phone'] = $value === null || $value === '' ? null : $value;
+    }
+
+    public function setEmailAttribute($value): void
+    {
+        $this->attributes['email'] = $value === null || $value === '' ? null : $value;
+    }
+
     public function getEmailAttribute($value)
     {
         return singeValue($value);

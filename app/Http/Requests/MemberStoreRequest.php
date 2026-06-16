@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Member;
 use Illuminate\Validation\Rule;
 
 class MemberStoreRequest extends BaseFormRequest
@@ -13,6 +14,8 @@ class MemberStoreRequest extends BaseFormRequest
 
     public function rules(): array
     {
+        $isHeadOfFamily = $this->isHeadOfFamilyMember();
+
         return [
             'name'                => 'required|array|size:2',
             'name.en'             => 'required',
@@ -20,7 +23,9 @@ class MemberStoreRequest extends BaseFormRequest
             'gender'              => 'required|in:Male,Female',
             'birth_date'          => 'date_format:d-m-Y',
             'unique_number' => 'sometimes|nullable|unique:members,unique_number,' . request()->id,
-            'phone' => 'nullable|regex:/^[5-9]{1}[0-9]{9}/|unique:members,phone,' . request()->id,
+            'phone' => $isHeadOfFamily
+                ? 'required|regex:/^[5-9]{1}[0-9]{9}/|unique:members,phone,' . request()->id
+                : 'nullable|regex:/^[5-9]{1}[0-9]{9}/|unique:members,phone,' . request()->id,
             'email' => 'sometimes|nullable|unique:members,email,' . request()->id,
             'blood_group'         => [
                 Rule::in([
@@ -98,5 +103,15 @@ class MemberStoreRequest extends BaseFormRequest
         return [
             'name.en' => 'trim|capitalize|escape',
         ];
+    }
+
+    private function isHeadOfFamilyMember(): bool
+    {
+        $id = request()->id;
+        if (!$id) {
+            return false;
+        }
+        $member = Member::find($id);
+        return $member && ($member->head_of_the_family_id === null || $member->head_of_the_family_id === '');
     }
 }
