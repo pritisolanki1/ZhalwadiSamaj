@@ -255,8 +255,8 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
 
     Route::apiResource('reports', ReportController::class);
 
-    // Zip Daily Number Path Game
-    Route::group(['prefix' => 'zip'], function () {
+    // Zip Daily Number Path Game — members only
+    Route::group(['prefix' => 'zip', 'middleware' => ['role:Member']], function () {
         Route::get('/today', [ZipGameController::class, 'todayPuzzle']);
         Route::post('/submit', [ZipGameController::class, 'submitResult']);
         Route::get('/leaderboard', [ZipGameController::class, 'leaderboard']);
