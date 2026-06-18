@@ -13,7 +13,7 @@ class ZipGameController extends ApiController
     {
         $puzzle = ZipPuzzle::where('puzzle_date', today())->first();
         if (!$puzzle) {
-            return $this->sendError('No puzzle available for today.', 404);
+            return $this->errorResponse('No puzzle available for today.', null, 404);
         }
 
         $userId = Auth::user()->id;
@@ -21,7 +21,7 @@ class ZipGameController extends ApiController
             ->where('puzzle_id', $puzzle->id)
             ->first();
 
-        return $this->sendResponse([
+        return $this->successResponse('Today\'s puzzle retrieved.', [
             'id' => $puzzle->id,
             'grid_size' => $puzzle->grid_size,
             'grid_numbers' => $puzzle->grid_numbers,
@@ -31,9 +31,9 @@ class ZipGameController extends ApiController
             'my_result' => $existingResult ? [
                 'is_correct' => $existingResult->is_correct,
                 'completion_time_seconds' => $existingResult->completion_time_seconds,
-                'completed_at' => $existingResult->completed_at,
+                'completed_at' => $existingResult->completed_at?->toIso8601String(),
             ] : null,
-        ], 'Today\'s puzzle retrieved.');
+        ]);
     }
 
     public function submitResult(Request $request)
@@ -53,7 +53,7 @@ class ZipGameController extends ApiController
             ->first();
 
         if ($existing) {
-            return $this->sendError('You have already submitted a result for this puzzle.', 422);
+            return $this->errorResponse('You have already submitted a result for this puzzle.', null, 422);
         }
 
         $gridSize = $puzzle->grid_size;
@@ -79,23 +79,23 @@ class ZipGameController extends ApiController
                 ->count() + 1;
         }
 
-        return $this->sendResponse([
+        return $this->successResponse($isCorrect ? 'Correct! Puzzle solved.' : 'Incorrect path.', [
             'is_correct' => $isCorrect,
             'correct_solution' => $solutionPath,
             'completion_time_seconds' => $result->completion_time_seconds,
             'rank' => $rank,
-        ], $isCorrect ? 'Correct! Puzzle solved.' : 'Incorrect path.');
+        ]);
     }
 
     public function leaderboard()
     {
         $todayPuzzle = ZipPuzzle::where('puzzle_date', today())->first();
         if (!$todayPuzzle) {
-            return $this->sendResponse([
+            return $this->successResponse('No puzzle today.', [
                 'leaderboard' => [],
                 'total_players' => 0,
                 'user_rank' => null,
-            ], 'No puzzle today.');
+            ]);
         }
 
         $results = ZipGameResult::where('puzzle_id', $todayPuzzle->id)
@@ -131,15 +131,15 @@ class ZipGameController extends ApiController
                 'user_name' => optional($r->user)->name ?? 'Unknown',
                 'user_avatar' => optional($r->user)->avatar ?? null,
                 'completion_time_seconds' => $r->completion_time_seconds,
-                'completed_at' => $r->completed_at,
+                'completed_at' => $r->completed_at?->toIso8601String(),
             ];
         }
 
-        return $this->sendResponse([
+        return $this->successResponse('Leaderboard retrieved.', [
             'leaderboard' => $leaderboard,
             'total_players' => $totalPlayers,
             'user_rank' => $userRankPosition,
-        ], 'Leaderboard retrieved.');
+        ]);
     }
 
     public function myHistory()
@@ -163,7 +163,7 @@ class ZipGameController extends ApiController
             ];
         }
 
-        return $this->sendResponse($history, 'History retrieved.');
+        return $this->successResponse('History retrieved.', $history);
     }
 
     private function validatePath(array $path, array $solution, int $gridSize): bool
