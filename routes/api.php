@@ -255,10 +255,10 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
 
     Route::apiResource('reports', ReportController::class);
 
-    // Zip Daily Puzzle Game
+    // Zip Daily Number Path Game
     Route::group(['prefix' => 'zip'], function () {
-        Route::get('/today', [ZipGameController::class, 'today']);
-        Route::post('/submit', [ZipGameController::class, 'submit']);
+        Route::get('/today', [ZipGameController::class, 'todayPuzzle']);
+        Route::post('/submit', [ZipGameController::class, 'submitResult']);
         Route::get('/leaderboard', [ZipGameController::class, 'leaderboard']);
         Route::get('/my-history', [ZipGameController::class, 'myHistory']);
     });

@@ -2,24 +2,30 @@
 
 namespace App\Models;
 
-use GoldSpecDigital\LaravelEloquentUUID\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Model;
 
 class ZipPuzzle extends Model
 {
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
+    protected $fillable = [
+        'grid_size',
+        'grid_numbers',
+        'solution_path',
+        'puzzle_date',
+        'difficulty',
     ];
 
     protected $casts = [
-        'grid_data'     => 'array',
+        'grid_numbers' => 'array',
         'solution_path' => 'array',
-        'puzzle_date'   => 'date',
+        'puzzle_date' => 'date',
     ];
 
-    public function results(): HasMany
+    public function scopeToday($query)
+    {
+        return $query->whereDate('puzzle_date', today());
+    }
+
+    public function results()
     {
         return $this->hasMany(ZipGameResult::class, 'puzzle_id');
     }

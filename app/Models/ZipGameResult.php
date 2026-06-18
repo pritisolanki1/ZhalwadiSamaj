@@ -2,29 +2,32 @@
 
 namespace App\Models;
 
-use GoldSpecDigital\LaravelEloquentUUID\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Model;
 
 class ZipGameResult extends Model
 {
-    protected $guarded = [
-        'id',
-        'created_at',
-        'updated_at',
+    protected $fillable = [
+        'user_id',
+        'puzzle_id',
+        'completion_time_seconds',
+        'path_submitted',
+        'is_correct',
+        'completed_at',
     ];
 
     protected $casts = [
-        'path_taken'        => 'array',
-        'completed_at'      => 'datetime',
+        'path_submitted' => 'array',
+        'completed_at' => 'datetime',
+        'is_correct' => 'boolean',
     ];
 
-    public function puzzle(): BelongsTo
+    public function puzzle()
     {
         return $this->belongsTo(ZipPuzzle::class, 'puzzle_id');
     }
 
-    public function member(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(Member::class, 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }
