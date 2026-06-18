@@ -36,8 +36,8 @@ class MemberRequestController extends ApiController
                   ->orWhere('description', 'like', "%{$search}%")
                   ->orWhereHas('member', function ($mq) use ($search) {
                       $mq->where(function ($mq2) use ($search) {
-                          $mq2->where('name->en', 'like', "%{$search}%")
-                               ->orWhere('name->gu', 'like', "%{$search}%");
+                          $mq2->whereRaw('LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, "$.en"))) LIKE ?', ['%' . mb_strtolower($search) . '%'])
+                               ->orWhereRaw('LOWER(JSON_UNQUOTE(JSON_EXTRACT(name, "$.gu"))) LIKE ?', ['%' . mb_strtolower($search) . '%']);
                       });
                   });
             });
