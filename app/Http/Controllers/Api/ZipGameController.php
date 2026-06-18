@@ -12,8 +12,9 @@ class ZipGameController extends ApiController
     public function todayPuzzle()
     {
         $puzzle = ZipPuzzle::where('puzzle_date', today())->first();
+
         if (!$puzzle) {
-            return $this->errorResponse('No puzzle available for today.', null, 404);
+            $puzzle = ZipPuzzle::generateForDate(today());
         }
 
         $userId = Auth::user()->id;
@@ -27,6 +28,7 @@ class ZipGameController extends ApiController
             'grid_numbers' => $puzzle->grid_numbers,
             'puzzle_date' => $puzzle->puzzle_date->format('Y-m-d'),
             'difficulty' => $puzzle->difficulty,
+            'server_date' => today()->format('Y-m-d'),
             'has_played' => $existingResult !== null,
             'my_result' => $existingResult ? [
                 'is_correct' => $existingResult->is_correct,
