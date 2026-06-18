@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\JobController;
 use App\Http\Controllers\Api\KuldeviController;
 use App\Http\Controllers\Api\MemberController;
 use App\Http\Controllers\Api\MemberGalleryController;
+use App\Http\Controllers\Api\MemberRequestController;
 use App\Http\Controllers\Api\NativePlacesController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ResultController;
@@ -251,6 +252,14 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
         Route::put('/update/{id}', [MemberGalleryController::class, 'update']);
         Route::post('/upload_image/{id}', [MemberGalleryController::class, 'upload_image']);
         Route::delete('/delete/{id}', [MemberGalleryController::class, 'destroy']);
+    });
+
+    //  Member Request Route
+    Route::group(['prefix' => 'member_request'], function () {
+        Route::get('/get_all', [MemberRequestController::class, 'index']);
+        Route::post('/store', [MemberRequestController::class, 'store']);
+        Route::get('/get/{id}', [MemberRequestController::class, 'show']);
+        Route::put('/update/{id}', [MemberRequestController::class, 'update']);
     });
 
     Route::apiResource('reports', ReportController::class);
