@@ -97,6 +97,7 @@ class ZipGameController extends ApiController
                 'leaderboard' => [],
                 'total_players' => 0,
                 'user_rank' => null,
+                'user_result' => null,
             ]);
         }
 
@@ -108,16 +109,15 @@ class ZipGameController extends ApiController
             ->get();
 
         $userId = Auth::user()->id;
-        $userRank = ZipGameResult::where('puzzle_id', $todayPuzzle->id)
-            ->where('is_correct', true)
+        $userResult = ZipGameResult::where('puzzle_id', $todayPuzzle->id)
             ->where('user_id', $userId)
             ->first();
 
         $userRankPosition = null;
-        if ($userRank) {
+        if ($userResult && $userResult->is_correct) {
             $userRankPosition = ZipGameResult::where('puzzle_id', $todayPuzzle->id)
                 ->where('is_correct', true)
-                ->where('completion_time_seconds', '<', $userRank->completion_time_seconds)
+                ->where('completion_time_seconds', '<', $userResult->completion_time_seconds)
                 ->count() + 1;
         }
 
@@ -127,11 +127,15 @@ class ZipGameController extends ApiController
 
         $leaderboard = [];
         foreach ($results as $i => $r) {
+            $user = $r->user;
+            $nameArr = $user ? $user->name : null;
+            $userName = is_array($nameArr) ? ($nameArr['en'] ?? 'Unknown') : ($nameArr ?? 'Unknown');
+
             $leaderboard[] = [
                 'rank' => $i + 1,
                 'user_id' => $r->user_id,
-                'user_name' => optional($r->user)->name ?? 'Unknown',
-                'user_avatar' => optional($r->user)->avatar ?? null,
+                'user_name' => $userName,
+                'user_avatar' => $user ? ($user->avatar ?? '') : '',
                 'completion_time_seconds' => $r->completion_time_seconds,
                 'completed_at' => $r->completed_at?->toIso8601String(),
             ];
@@ -141,7 +145,16 @@ class ZipGameController extends ApiController
             'leaderboard' => $leaderboard,
             'total_players' => $totalPlayers,
             'user_rank' => $userRankPosition,
-        ]);
+            'user_result' => $userResult ? [
+                'user_id' => (string) $userResult->user_id,
+                'is_correct' => $userResult->is_correct,
+                'completion_time_seconds' => $userResult->completion_time_seconds,
+                'completed_at' => $userResult->completed_at?->toIso8601String(),
+            ] : null,
+            'current_user_id' => (string) $userId,
+        ])->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+          ->header('Pragma', 'no-cache')
+          ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     public function myHistory()
