@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\NativePlacesController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ResultController;
 use App\Http\Controllers\Api\TeamController;
+use App\Http\Controllers\Api\ZipGameController;
 use App\Http\Controllers\Api\ZoneController;
 use Illuminate\Support\Facades\Route;
 
@@ -256,4 +257,12 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
     });
 
     Route::apiResource('reports', ReportController::class);
+
+    // Zip Daily Puzzle Game
+    Route::group(['prefix' => 'zip'], function () {
+        Route::get('/today', [ZipGameController::class, 'today']);
+        Route::post('/submit', [ZipGameController::class, 'submit']);
+        Route::get('/leaderboard', [ZipGameController::class, 'leaderboard']);
+        Route::get('/my-history', [ZipGameController::class, 'myHistory']);
+    });
 });

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             NativePlacesSeeder::class,
             UserSeeder::class,
             MemberSeeder::class,
+            ZipPuzzleSeeder::class,
         ]);
     }
 }
