@@ -39,9 +39,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('dashboard') }}">{{ __('Dashboard') }}</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('app-version.edit') }}">{{ __('App Version') }}</a>
-                        </li>
                     @endauth
                 </ul>
 

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\AppVersionController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -22,8 +21,6 @@ Route::get('/', [HomeController::class, 'index'])->name('index');
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
-    Route::get('/app-version', [AppVersionController::class, 'edit'])->name('app-version.edit');
-    Route::put('/app-version', [AppVersionController::class, 'update'])->name('app-version.update');
 });
 
 Route::get('image/{width}/{height}/{any}', [HomeController::class, 'getImage'])->where('any', '.*');

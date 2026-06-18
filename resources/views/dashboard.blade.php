@@ -15,10 +15,6 @@
 
                         <h1>{{ __('Wel-Come Parivar App') }}</h1>
 
-                        <a href="{{ route('app-version.edit') }}" class="btn btn-primary mt-3">
-                            {{ __('Manage App Version') }}
-                        </a>
-
                     </div>
                 </div>
             </div>
