@@ -105,7 +105,6 @@ class ZipGameController extends ApiController
             ->where('is_correct', true)
             ->orderBy('completion_time_seconds')
             ->with('user')
-            ->take(20)
             ->get();
 
         $userId = Auth::user()->id;

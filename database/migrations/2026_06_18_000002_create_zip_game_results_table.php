@@ -10,7 +10,7 @@ class CreateZipGameResultsTable extends Migration
     {
         Schema::create('zip_game_results', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedBigInteger('user_id');
+            $table->uuid('user_id');
             $table->unsignedBigInteger('puzzle_id');
             $table->unsignedInteger('completion_time_seconds')->nullable();
             $table->json('path_submitted')->nullable();

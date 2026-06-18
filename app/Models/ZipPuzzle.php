@@ -74,17 +74,12 @@ class ZipPuzzle extends Model
             ];
         }
 
-        $difficulty = 'easy';
-        $count = count($gridNumbers);
-        if ($count >= 10) $difficulty = 'medium';
-        if ($count >= 14) $difficulty = 'hard';
-
         return self::create([
             'grid_size' => $size,
             'grid_numbers' => $gridNumbers,
             'solution_path' => $solutionPath,
             'puzzle_date' => $date,
-            'difficulty' => $difficulty,
+            'difficulty' => 'hard',
         ]);
     }
 }
