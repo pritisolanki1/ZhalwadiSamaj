@@ -33,7 +33,13 @@ class MemberRequestController extends ApiController
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('subject', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('member', function ($mq) use ($search) {
+                      $mq->where(function ($mq2) use ($search) {
+                          $mq2->where('name->en', 'like', "%{$search}%")
+                               ->orWhere('name->gu', 'like', "%{$search}%");
+                      });
+                  });
             });
         }
 
