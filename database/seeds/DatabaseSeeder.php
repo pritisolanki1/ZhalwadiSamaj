@@ -1,5 +1,6 @@
 <?php
 
+use Database\Seeders\ZipPuzzleSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
