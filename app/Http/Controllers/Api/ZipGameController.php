@@ -125,13 +125,20 @@ class ZipGameController extends ApiController
             ->count();
 
         $leaderboard = [];
+        $currentRank = 0;
+        $prevTime = null;
         foreach ($results as $i => $r) {
+            if ($prevTime === null || (float) $r->completion_time_seconds !== (float) $prevTime) {
+                $currentRank = $i + 1;
+            }
+            $prevTime = $r->completion_time_seconds;
+
             $user = $r->user;
             $nameArr = $user ? $user->name : null;
             $userName = is_array($nameArr) ? ($nameArr['en'] ?? 'Unknown') : ($nameArr ?? 'Unknown');
 
             $leaderboard[] = [
-                'rank' => $i + 1,
+                'rank' => $currentRank,
                 'user_id' => $r->user_id,
                 'user_name' => $userName,
                 'user_avatar' => $user ? ($user->avatar ?? '') : '',
