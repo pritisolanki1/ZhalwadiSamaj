@@ -27,7 +27,7 @@ class MemberRequestResource extends JsonResource
             'completed_by_user' => $this->when($this->completed_by, function () {
                 return [
                     'id'   => $this->completedBy?->id,
-                    'name' => $this->completedBy?->name,
+                    'name' => $this->completedBy?->name['en'] ?? null,
                 ];
             }),
         ];
