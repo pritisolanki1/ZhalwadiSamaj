@@ -129,7 +129,7 @@ class ZipGameController extends ApiController
         $prevTime = null;
         foreach ($results as $i => $r) {
             if ($prevTime === null || (float) $r->completion_time_seconds !== (float) $prevTime) {
-                $currentRank = $i + 1;
+                $currentRank++;
             }
             $prevTime = $r->completion_time_seconds;
 

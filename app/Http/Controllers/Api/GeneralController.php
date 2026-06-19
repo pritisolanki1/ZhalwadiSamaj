@@ -44,6 +44,7 @@ class GeneralController extends ApiController
             $iData['dashboard']['total_family'] = Member::whereNull('head_of_the_family_id')->count();
             $iData['dashboard']['total_donor'] = Donation::where(['transition_status' => Donation::TRANSITION_STATUS_DONE])->groupBy('member_id')->count();
             $iData['dashboard']['total_report'] = Report::count();
+            $iData['dashboard']['total_pending_member_request'] = \App\Models\MemberRequest::where('status', 'Pending')->count();
 
             $iData['members'] = $this->getMember();
             // $iData['member_filter'] = Member::select(['profession'=>function($query){return $query;}])->get()->groupBy('profession.en');
