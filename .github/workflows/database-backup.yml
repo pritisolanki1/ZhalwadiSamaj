@@ -1,0 +1,63 @@
+name: MySQL Database Backup
+
+on:
+  schedule:
+    # Every hour from 8 AM to 11 PM IST
+    - cron: '30 2-17 * * *'
+
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout backup branch
+        uses: actions/checkout@v4
+        with:
+          ref: db-backups
+          fetch-depth: 0
+
+      - name: Install MySQL Client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
+      - name: Create backup directory
+        run: mkdir -p backups
+
+      - name: Dump database
+        env:
+          MYSQL_PWD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          FILE="backups/backup-$(date +'%Y-%m-%d-%H-%M').sql"
+
+          mysqldump \
+            -h "${{ secrets.MYSQL_HOST }}" \
+            -P "${{ secrets.MYSQL_PORT }}" \
+            -u "${{ secrets.MYSQL_USER }}" \
+            "${{ secrets.MYSQL_DATABASE }}" \
+            > "$FILE"
+
+      - name: Compress backup
+        run: gzip -f backups/*.sql
+
+      - name: Keep only latest 10 backups
+        run: |
+          ls -1t backups/*.sql.gz | tail -n +11 | xargs -r rm
+
+      - name: Commit backup
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add backups/
+
+          git commit -m "Backup $(date +'%Y-%m-%d %H:%M')" || echo "No changes"
+
+      - name: Push backup branch
+        run: |
+          git push origin db-backups
