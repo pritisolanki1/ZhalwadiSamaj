@@ -36,6 +36,10 @@ jobs:
           FILE="backups/backup-$(date +'%Y-%m-%d-%H-%M').sql"
 
           mysqldump \
+            --single-transaction \
+            --quick \
+            --lock-tables=false \
+            --no-tablespaces \
             -h "${{ secrets.MYSQL_HOST }}" \
             -P "${{ secrets.MYSQL_PORT }}" \
             -u "${{ secrets.MYSQL_USER }}" \
