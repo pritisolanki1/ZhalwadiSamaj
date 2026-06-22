@@ -115,6 +115,11 @@ class ActivityLog extends Model
         return $this->belongsTo(Team::class, 'subject_id', 'id')->withTrashed();
     }
 
+    public function memberRequest(): BelongsTo
+    {
+        return $this->belongsTo(MemberRequest::class, 'subject_id', 'id')->withTrashed();
+    }
+
     public function causer(): MorphTo
     {
         return $this->morphTo()->withTrashed();

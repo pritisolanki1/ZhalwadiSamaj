@@ -161,6 +161,8 @@ class GeneralController extends ApiController
                 'donation:id,member_id',
                 'donation.member:id,head_of_the_family_id,name,pancard',
 
+                'memberRequest',
+
                 'causer',
 
                 // 'announcement',
