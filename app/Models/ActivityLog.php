@@ -117,7 +117,7 @@ class ActivityLog extends Model
 
     public function memberRequest(): BelongsTo
     {
-        return $this->belongsTo(MemberRequest::class, 'subject_id', 'id')->withTrashed();
+        return $this->belongsTo(MemberRequest::class, 'subject_id', 'id');
     }
 
     public function causer(): MorphTo
