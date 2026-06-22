@@ -37,7 +37,6 @@ class ZipPuzzle extends Model
 
         $dayOfMonth = (int) $date->format('j');
 
-        // Rotate difficulty: easy/medium/hard
         $diffIndex = $dayOfMonth % 3;
 
         switch ($diffIndex) {
@@ -61,20 +60,26 @@ class ZipPuzzle extends Model
         $total = $size * $size;
         if ($numWaypoints > $total) $numWaypoints = $total;
 
-        // Alternate between horizontal and vertical snake for variety
+        // 1. Generate a base snake path
         $patternIndex = $dayOfMonth % 4;
         switch ($patternIndex) {
-            case 0: $solutionPath = self::horizontalSnake($size, true); break;
-            case 1: $solutionPath = self::verticalSnake($size, true); break;
-            case 2: $solutionPath = self::horizontalSnake($size, false); break;
-            default: $solutionPath = self::verticalSnake($size, false); break;
+            case 0: $path = self::horizontalSnake($size, true); break;
+            case 1: $path = self::verticalSnake($size, true); break;
+            case 2: $path = self::horizontalSnake($size, false); break;
+            default: $path = self::verticalSnake($size, false); break;
         }
 
+        // 2. Apply random 2-opt perturbations to create organic-looking paths
+        //    Higher difficulty = more perturbations = more complex path
+        $numPerturbations = $size * ($diffIndex + 1) * 2;
+        $path = self::perturbPath($path, $numPerturbations, $seed);
+
+        // 3. Place waypoints along the perturbed path
         $waypointIndices = self::pickWaypoints($total, $numWaypoints);
 
         $gridNumbers = [];
         foreach ($waypointIndices as $num => $idx) {
-            $pos = $solutionPath[$idx];
+            $pos = $path[$idx];
             $gridNumbers[] = [
                 'row' => $pos[0],
                 'col' => $pos[1],
@@ -85,10 +90,49 @@ class ZipPuzzle extends Model
         return self::create([
             'grid_size' => $size,
             'grid_numbers' => $gridNumbers,
-            'solution_path' => $solutionPath,
+            'solution_path' => $path,
             'puzzle_date' => $date,
             'difficulty' => $difficulty,
         ]);
+    }
+
+    /**
+     * Apply 2-opt perturbations to a Hamiltonian path.
+     * Reverses random segments while maintaining adjacency at boundaries.
+     * This creates organic-looking paths that don't follow a simple pattern.
+     */
+    public static function perturbPath(array $path, int $iterations, int $seed): array
+    {
+        $n = count($path);
+        if ($n < 4) return $path;
+
+        srand($seed);
+        $result = $path;
+
+        for ($attempt = 0; $attempt < $iterations * 3; $attempt++) {
+            $i = rand(1, $n - 3);
+            $j = rand($i + 2, min($i + 8, $n - 2));
+
+            if ($j - $i < 2) continue;
+
+            // Check if reversing segment [i..j] maintains adjacencies
+            // result[i-1] must be adjacent to result[j]
+            $ri = $result[$i - 1];
+            $rj = $result[$j];
+            if (abs($ri[0] - $rj[0]) + abs($ri[1] - $rj[1]) != 1) continue;
+
+            // result[i] must be adjacent to result[j+1]
+            $ri2 = $result[$i];
+            $rj2 = $result[$j + 1];
+            if (abs($ri2[0] - $rj2[0]) + abs($ri2[1] - $rj2[1]) != 1) continue;
+
+            // Valid 2-opt swap: reverse the segment
+            $segment = array_slice($result, $i, $j - $i + 1);
+            $reversed = array_reverse($segment);
+            array_splice($result, $i, $j - $i + 1, $reversed);
+        }
+
+        return $result;
     }
 
     public static function horizontalSnake($size, $startLeft = true)
