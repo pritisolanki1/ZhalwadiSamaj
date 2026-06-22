@@ -15,6 +15,7 @@ use App\Models\Game;
 use App\Models\GameResult;
 use App\Models\Member;
 use App\Models\MemberGallery;
+use App\Models\MemberRequest;
 use App\Models\Report;
 use App\Models\Result;
 use App\Models\Team;
@@ -203,8 +204,9 @@ class GeneralController extends ApiController
                             'Kuldevi:id,name',
                             'nativePlace:id,native',
                         ],
-                        GameResult::class   => ['game:id,game_name,game_name,game_type,year'],
-                        Team::class         => ['member:id,head_of_the_family_id,name'],
+                        GameResult::class    => ['game:id,game_name,game_name,game_type,year'],
+                        Team::class          => ['member:id,head_of_the_family_id,name'],
+                        MemberRequest::class => ['member:id,name,unique_number,phone,head_of_the_family_id,avatar'],
                         // Committee::class => [],
                         // Job::class => [],
                     ]);
