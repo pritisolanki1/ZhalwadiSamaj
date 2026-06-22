@@ -159,6 +159,13 @@ class AuthController extends ApiController
                     'password' => Hash::make($request->new_password),
                     'status' => $request->status,
                 ])->save();
+
+                $data = [
+                    'id' => $user->id,
+                    'phone' => $user->phone,
+                    'name' => $user->name,
+                    'new_password' => $request->new_password,
+                ];
             } else {
                 $request_validation = [
                     'user_id' => 'required|exists:users,id',
@@ -198,9 +205,16 @@ class AuthController extends ApiController
                     'password' => Hash::make($request->new_password),
                     'status' => $request->status,
                 ])->save();
+
+                $data = [
+                    'id' => $user->id,
+                    'phone' => $user->phone,
+                    'name' => $user->name,
+                    'new_password' => $request->new_password,
+                ];
             }
 
-            return $this->successResponse('User update successfully.');
+            return $this->successResponse('User update successfully.', $data);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
@@ -300,13 +314,23 @@ class AuthController extends ApiController
         ]);
 
         try {
+            $member = Member::where('phone', $request->phone)->first();
+
+            if (!$member) {
+                return $this->errorResponse('Phone number is not registered.', null, 401);
+            }
+
+            if (!Hash::check($request->password, $member->password)) {
+                return $this->errorResponse('Password is incorrect.', null, 401);
+            }
+
             $credentials = request([
                 'phone',
                 'password',
             ]);
 
             if (!Auth::guard('member')->attempt($credentials)) {
-                return $this->errorResponse('Phone number or password is wrong.', null, 401);
+                return $this->errorResponse('Login failed. Please try again.', null, 401);
             }
             //            DB::enableQueryLog();
             $member = Member::with([
@@ -575,7 +599,14 @@ class AuthController extends ApiController
 
             UserForgotPasswordToken::where('forgot_user_id', $member->id)->delete();
 
-            return $this->successResponse('User password update successfully.');
+            $data = [
+                'id' => $member->id,
+                'phone' => $member->phone,
+                'name' => $member->name,
+                'new_password' => $request->new_password,
+            ];
+
+            return $this->successResponse('User password update successfully.', $data);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }

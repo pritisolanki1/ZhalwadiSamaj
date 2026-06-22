@@ -176,7 +176,6 @@ class MemberController extends ApiController
             Member::find($id)->fill($updatedFiled)->save();
 
             $iRes = Member::find($id);
-            $this->addUserLogin($iRes);
 
             DB::commit();
 
