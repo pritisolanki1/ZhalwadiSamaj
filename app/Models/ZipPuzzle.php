@@ -37,33 +37,40 @@ class ZipPuzzle extends Model
 
         $dayOfMonth = (int) $date->format('j');
 
-        $size = ($dayOfMonth % 2 === 0) ? 8 : 7;
-        $difficulty = 'hard';
-        $numWaypoints = rand(20, 28);
+        // Rotate difficulty: easy/medium/hard
+        $diffIndex = $dayOfMonth % 3;
+
+        switch ($diffIndex) {
+            case 0:
+                $difficulty = 'easy';
+                $size = 5;
+                $numWaypoints = rand(4, 6);
+                break;
+            case 1:
+                $difficulty = 'medium';
+                $size = 6;
+                $numWaypoints = rand(7, 9);
+                break;
+            default:
+                $difficulty = 'hard';
+                $size = 7;
+                $numWaypoints = rand(10, 14);
+                break;
+        }
 
         $total = $size * $size;
         if ($numWaypoints > $total) $numWaypoints = $total;
 
-        $pathPattern = $dayOfMonth % 4;
-        switch ($pathPattern) {
+        // Alternate between horizontal and vertical snake for variety
+        $patternIndex = $dayOfMonth % 4;
+        switch ($patternIndex) {
             case 0: $solutionPath = self::horizontalSnake($size, true); break;
             case 1: $solutionPath = self::verticalSnake($size, true); break;
             case 2: $solutionPath = self::horizontalSnake($size, false); break;
             default: $solutionPath = self::verticalSnake($size, false); break;
         }
 
-        $waypointIndices = [];
-        $waypointIndices[0] = 0;
-        $waypointIndices[] = $total - 1;
-        $remaining = $numWaypoints - 2;
-        if ($remaining > 0) {
-            $candidates = range(1, $total - 2);
-            shuffle($candidates);
-            $picked = array_slice($candidates, 0, $remaining);
-            $waypointIndices = array_merge($waypointIndices, $picked);
-        }
-        sort($waypointIndices);
-        $waypointIndices = array_values(array_unique($waypointIndices));
+        $waypointIndices = self::pickWaypoints($total, $numWaypoints);
 
         $gridNumbers = [];
         foreach ($waypointIndices as $num => $idx) {
@@ -84,7 +91,7 @@ class ZipPuzzle extends Model
         ]);
     }
 
-    private static function horizontalSnake($size, $startLeft = true)
+    public static function horizontalSnake($size, $startLeft = true)
     {
         $path = [];
         for ($row = 0; $row < $size; $row++) {
@@ -102,7 +109,7 @@ class ZipPuzzle extends Model
         return $path;
     }
 
-    private static function verticalSnake($size, $startTop = true)
+    public static function verticalSnake($size, $startTop = true)
     {
         $path = [];
         for ($col = 0; $col < $size; $col++) {
@@ -118,5 +125,24 @@ class ZipPuzzle extends Model
             }
         }
         return $path;
+    }
+
+    private static function pickWaypoints(int $total, int $numWaypoints): array
+    {
+        if ($numWaypoints <= 2) {
+            return $numWaypoints === 1 ? [0] : [0, $total - 1];
+        }
+
+        $indices = [0];
+        $remaining = $numWaypoints - 2;
+        $step = ($total - 1) / ($numWaypoints - 1);
+        for ($i = 1; $i <= $remaining; $i++) {
+            $indices[] = min((int) round($i * $step), $total - 1);
+        }
+        $indices[] = $total - 1;
+
+        $indices = array_unique($indices);
+        sort($indices);
+        return array_values(array_slice($indices, 0, $numWaypoints));
     }
 }

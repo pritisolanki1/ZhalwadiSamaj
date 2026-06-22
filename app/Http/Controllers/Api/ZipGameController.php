@@ -22,6 +22,8 @@ class ZipGameController extends ApiController
             ->where('puzzle_id', $puzzle->id)
             ->first();
 
+        $stats = $this->getUserStats($userId);
+
         return $this->successResponse('Today\'s puzzle retrieved.', [
             'id' => $puzzle->id,
             'grid_size' => $puzzle->grid_size,
@@ -35,6 +37,7 @@ class ZipGameController extends ApiController
                 'completion_time_seconds' => $existingResult->completion_time_seconds,
                 'completed_at' => $existingResult->completed_at?->toIso8601String(),
             ] : null,
+            'stats' => $stats,
         ]);
     }
 
@@ -44,7 +47,7 @@ class ZipGameController extends ApiController
             'puzzle_id' => 'required|exists:zip_puzzles,id',
             'path_submitted' => 'required|array',
             'path_submitted.*' => 'required|array|size:2',
-            'completion_time_seconds' => 'required|integer|min:1',
+            'completion_time_seconds' => 'required|integer|min:0',
         ]);
 
         $userId = Auth::user()->id;
@@ -62,7 +65,7 @@ class ZipGameController extends ApiController
         $totalCells = $gridSize * $gridSize;
         $solutionPath = $puzzle->solution_path;
         $pathSubmitted = $request->path_submitted;
-        $isCorrect = $this->validatePath($pathSubmitted, $solutionPath, $gridSize);
+        $isCorrect = $this->validatePath($pathSubmitted, $solutionPath, $gridSize, $puzzle->grid_numbers);
 
         $result = ZipGameResult::create([
             'user_id' => $userId,
@@ -187,14 +190,94 @@ class ZipGameController extends ApiController
         return $this->successResponse('History retrieved.', $history);
     }
 
-    private function validatePath(array $path, array $solution, int $gridSize): bool
+    public function myStats()
+    {
+        $userId = Auth::user()->id;
+        $stats = $this->getUserStats($userId);
+        return $this->successResponse('Stats retrieved.', $stats);
+    }
+
+    /**
+     * Compute aggregate statistics for a user.
+     */
+    private function getUserStats($userId): array
+    {
+        $allResults = ZipGameResult::where('user_id', $userId)->get();
+        $totalPlayed = $allResults->count();
+        $correctResults = $allResults->where('is_correct', true);
+        $totalSolved = $correctResults->count();
+
+        $completionTimes = $correctResults->pluck('completion_time_seconds')->filter();
+
+        return [
+            'total_played' => $totalPlayed,
+            'total_solved' => $totalSolved,
+            'completion_rate' => $totalPlayed > 0 ? round(($totalSolved / $totalPlayed) * 100, 1) : 0,
+            'average_time_seconds' => $completionTimes->isNotEmpty() ? round($completionTimes->average()) : 0,
+            'best_time_seconds' => $completionTimes->isNotEmpty() ? $completionTimes->min() : 0,
+            'streak' => $this->computeStreak($userId),
+        ];
+    }
+
+    /**
+     * Compute current streak from consecutive daily completions.
+     */
+    private function computeStreak($userId): int
+    {
+        $correctResults = ZipGameResult::where('user_id', $userId)
+            ->where('is_correct', true)
+            ->with('puzzle')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($correctResults->isEmpty()) return 0;
+
+        $dates = [];
+        foreach ($correctResults as $r) {
+            if ($r->puzzle && $r->puzzle->puzzle_date) {
+                $dates[] = $r->puzzle->puzzle_date->format('Y-m-d');
+            }
+        }
+
+        $dates = array_unique($dates);
+        rsort($dates);
+
+        $streak = 0;
+        $expected = today()->format('Y-m-d');
+        foreach ($dates as $date) {
+            if ($date === $expected) {
+                $streak++;
+                $expected = date('Y-m-d', strtotime($expected . ' -1 day'));
+            } else {
+                break;
+            }
+        }
+
+        return $streak;
+    }
+
+    /**
+     * Validate the submitted path (LinkedIn-style).
+     * Path must:
+     * 1. Cover every cell exactly once
+     * 2. Be a continuous path (adjacent moves, no diagonals)
+     * 3. Visit numbered waypoints in correct order
+     * 4. Stay within bounds
+     * 5. Never overlap/cross itself
+     *
+     * Does NOT compare against a stored solution — any valid Hamiltonian
+     * path through the waypoints is accepted.
+     */
+    private function validatePath(array $path, array $solution, int $gridSize, array $gridNumbers): bool
     {
         $totalCells = $gridSize * $gridSize;
 
+        // 1. Must cover every cell exactly once
         if (count($path) !== $totalCells) {
             return false;
         }
 
+        // 2-5. Check boundaries, uniqueness, adjacency
         $visited = [];
         foreach ($path as $i => $step) {
             $row = $step[0];
@@ -221,10 +304,19 @@ class ZipGameController extends ApiController
             }
         }
 
-        foreach ($solution as $i => $step) {
-            if ($path[$i][0] !== $step[0] || $path[$i][1] !== $step[1]) {
-                return false;
+        // 3. Verify waypoints are visited in correct order
+        $waypointIndex = 0;
+        $sortedWaypoints = collect($gridNumbers)->sortBy('number')->values();
+        foreach ($path as $i => $step) {
+            if ($waypointIndex < count($sortedWaypoints)) {
+                $wp = $sortedWaypoints[$waypointIndex];
+                if ($step[0] == $wp['row'] && $step[1] == $wp['col']) {
+                    $waypointIndex++;
+                }
             }
+        }
+        if ($waypointIndex !== count($sortedWaypoints)) {
+            return false;
         }
 
         return true;

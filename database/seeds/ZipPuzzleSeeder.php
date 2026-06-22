@@ -9,116 +9,64 @@ class ZipPuzzleSeeder extends Seeder
 {
     public function run(): void
     {
-        $puzzles = [
-            $this->makePuzzle(0, 6, 7, 'easy'),
-            $this->makePuzzle(1, 6, 8, 'easy'),
-            $this->makePuzzle(2, 6, 10, 'medium'),
-            $this->makePuzzle(3, 6, 12, 'medium'),
-            $this->makePuzzle(4, 7, 10, 'medium'),
-            $this->makePuzzle(5, 7, 12, 'medium'),
-            $this->makePuzzle(6, 7, 15, 'hard'),
-            $this->makePuzzle(7, 6, 6, 'easy'),
-            $this->makePuzzle(8, 6, 9, 'medium'),
-            $this->makePuzzle(9, 6, 14, 'hard'),
-            $this->makePuzzle(10, 7, 8, 'easy'),
-            $this->makePuzzle(11, 7, 14, 'medium'),
-            $this->makePuzzle(12, 7, 18, 'hard'),
-            $this->makePuzzle(13, 6, 16, 'hard'),
+        $configs = [
+            [0,  5, 5,  'easy'],
+            [1,  5, 6,  'easy'],
+            [2,  6, 7,  'medium'],
+            [3,  6, 8,  'medium'],
+            [4,  6, 10, 'medium'],
+            [5,  7, 10, 'hard'],
+            [6,  7, 12, 'hard'],
+            [7,  5, 4,  'easy'],
+            [8,  6, 9,  'medium'],
+            [9,  7, 14, 'hard'],
+            [10, 5, 7,  'easy'],
+            [11, 7, 11, 'hard'],
+            [12, 6, 6,  'easy'],
+            [13, 7, 13, 'hard'],
         ];
 
-        foreach ($puzzles as $data) {
-            ZipPuzzle::create($data);
-        }
-    }
+        foreach ($configs as $i => $cfg) {
+            [$dayOffset, $size, $numWaypoints, $difficulty] = $cfg;
+            $total = $size * $size;
+            if ($numWaypoints > $total) $numWaypoints = $total;
 
-    private function makePuzzle(int $dayOffset, int $gridSize, int $numberCount, string $difficulty): array
-    {
-        $snake = $this->generateHorizontalSnake($gridSize, $dayOffset % 2 === 0);
-        $indices = $this->pickWaypointIndices($gridSize * $gridSize, $numberCount);
+            $startLeft = $i % 2 === 0;
+            $useVertical = $i % 3 === 0;
+            $path = $useVertical
+                ? ZipPuzzle::verticalSnake($size, $startLeft)
+                : ZipPuzzle::horizontalSnake($size, $startLeft);
 
-        $gridNumbers = [];
-        foreach ($indices as $num => $pathIdx) {
-            $gridNumbers[] = [
-                'row' => $snake[$pathIdx][0],
-                'col' => $snake[$pathIdx][1],
-                'number' => $num + 1,
-            ];
-        }
-
-        return [
-            'grid_size' => $gridSize,
-            'grid_numbers' => $gridNumbers,
-            'solution_path' => $snake,
-            'puzzle_date' => now()->addDays($dayOffset)->format('Y-m-d'),
-            'difficulty' => $difficulty,
-        ];
-    }
-
-    private function generateHorizontalSnake(int $size, bool $startLeft): array
-    {
-        $path = [];
-        for ($row = 0; $row < $size; $row++) {
-            if ($row % 2 === 0) {
-                if ($startLeft) {
-                    for ($col = 0; $col < $size; $col++) {
-                        $path[] = [$row, $col];
-                    }
-                } else {
-                    for ($col = $size - 1; $col >= 0; $col--) {
-                        $path[] = [$row, $col];
-                    }
-                }
-            } else {
-                if ($startLeft) {
-                    for ($col = $size - 1; $col >= 0; $col--) {
-                        $path[] = [$row, $col];
-                    }
-                } else {
-                    for ($col = 0; $col < $size; $col++) {
-                        $path[] = [$row, $col];
-                    }
+            $indices = [0];
+            $remaining = $numWaypoints - 2;
+            if ($remaining > 0) {
+                $step = ($total - 1) / ($numWaypoints - 1);
+                for ($j = 1; $j <= $remaining; $j++) {
+                    $indices[] = (int) round($j * $step);
                 }
             }
-        }
-        return $path;
-    }
-
-    private function pickWaypointIndices(int $totalCells, int $numWaypoints): array
-    {
-        if ($numWaypoints <= 2) {
-            return $numWaypoints === 1 ? [0] : [0, $totalCells - 1];
-        }
-
-        $indices = [0];
-        $step = ($totalCells - 1) / ($numWaypoints - 1);
-        for ($i = 1; $i < $numWaypoints - 1; $i++) {
-            $indices[] = (int) round($i * $step);
-        }
-        $indices[] = $totalCells - 1;
-
-        $indices = array_unique($indices);
-        sort($indices);
-
-        while (count($indices) < $numWaypoints) {
-            $last = end($indices);
-            $candidates = [];
-            for ($i = 1; $i < $totalCells - 1; $i++) {
-                if (!in_array($i, $indices)) {
-                    $minDist = PHP_INT_MAX;
-                    foreach ($indices as $idx) {
-                        $dist = abs($i - $idx);
-                        if ($dist < $minDist) $minDist = $dist;
-                    }
-                    $candidates[$i] = $minDist;
-                }
-            }
-            arsort($candidates);
-            $indices[] = key($candidates);
+            $indices[] = $total - 1;
+            $indices = array_unique($indices);
             sort($indices);
-        }
+            $indices = array_values(array_slice($indices, 0, $numWaypoints));
 
-        $indices = array_slice($indices, 0, $numWaypoints);
-        sort($indices);
-        return $indices;
+            $gridNumbers = [];
+            foreach ($indices as $num => $idx) {
+                $pos = $path[$idx];
+                $gridNumbers[] = [
+                    'row' => $pos[0],
+                    'col' => $pos[1],
+                    'number' => $num + 1,
+                ];
+            }
+
+            ZipPuzzle::create([
+                'grid_size' => $size,
+                'grid_numbers' => $gridNumbers,
+                'solution_path' => $path,
+                'puzzle_date' => now()->addDays($dayOffset)->format('Y-m-d'),
+                'difficulty' => $difficulty,
+            ]);
+        }
     }
 }

@@ -270,5 +270,6 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
         Route::post('/submit', [ZipGameController::class, 'submitResult']);
         Route::get('/leaderboard', [ZipGameController::class, 'leaderboard']);
         Route::get('/my-history', [ZipGameController::class, 'myHistory']);
+        Route::get('/my-stats', [ZipGameController::class, 'myStats']);
     });
 });
