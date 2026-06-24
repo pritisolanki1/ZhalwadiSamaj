@@ -217,12 +217,12 @@ class ZipPuzzle extends Model
 
         for ($attempt = 0; $attempt < $iterations * 5 && $applied < $iterations; $attempt++) {
             $i = mt_rand(1, $n - 3);
+            $minJ = $i + 2;
             $maxJ = min($i + mt_rand(3, max(3, (int)($n * 0.35))), $n - 2);
-            $j = mt_rand($i + 2, $maxJ);
-
-            if ($j - $i < 2) {
+            if ($maxJ < $minJ) {
                 continue;
             }
+            $j = mt_rand($minJ, $maxJ);
 
             $ri = $result[$i - 1];
             $rj = $result[$j];
