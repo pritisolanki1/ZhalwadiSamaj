@@ -105,8 +105,9 @@ class ZipPuzzle extends Model
     public static function generateHamiltonianPath(int $size, int $seed, int $complexity = 1): array
     {
         mt_srand($seed);
-        $totalCells = $size * $size;
-        $maxAttempts = $size <= 5 ? 200 : ($size <= 6 ? 100 : 30);
+
+        $maxAttempts = $size <= 5 ? 200 : ($size <= 6 ? 100 : 10);
+        $maxBacktracks = $size <= 5 ? 10000 : ($size <= 6 ? 50000 : 200000);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             $startRow = mt_rand(0, $size - 1);
@@ -114,8 +115,9 @@ class ZipPuzzle extends Model
 
             $visited = array_fill(0, $size, array_fill(0, $size, false));
             $path = [];
+            $backtrackCount = 0;
 
-            if (self::dfsCoil($path, $visited, $startRow, $startCol, $size, $complexity)) {
+            if (self::dfsCoil($path, $visited, $startRow, $startCol, $size, $complexity, $maxBacktracks, $backtrackCount)) {
                 return $path;
             }
         }
@@ -123,7 +125,7 @@ class ZipPuzzle extends Model
         return self::horizontalSnake($size, true);
     }
 
-    private static function dfsCoil(array &$path, array &$visited, int $row, int $col, int $size, int $complexity): bool
+    private static function dfsCoil(array &$path, array &$visited, int $row, int $col, int $size, int $complexity, int $maxBacktracks, int &$backtrackCount): bool
     {
         $visited[$row][$col] = true;
         $path[] = [$row, $col];
@@ -135,8 +137,15 @@ class ZipPuzzle extends Model
         $neighbors = self::getOrderedNeighbors($row, $col, $visited, $size, $complexity);
 
         foreach ($neighbors as $n) {
-            if (self::dfsCoil($path, $visited, $n[0], $n[1], $size, $complexity)) {
+            if (self::dfsCoil($path, $visited, $n[0], $n[1], $size, $complexity, $maxBacktracks, $backtrackCount)) {
                 return true;
+            }
+
+            $backtrackCount++;
+            if ($backtrackCount > $maxBacktracks) {
+                array_pop($path);
+                $visited[$row][$col] = false;
+                return false;
             }
         }
 
