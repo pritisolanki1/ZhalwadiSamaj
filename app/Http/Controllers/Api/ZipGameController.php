@@ -277,9 +277,11 @@ class ZipGameController extends ApiController
      * Path must:
      * 1. Cover every cell exactly once
      * 2. Be a continuous path (adjacent moves, no diagonals)
-     * 3. Visit numbered waypoints in correct order
-     * 4. Stay within bounds
-     * 5. Never overlap/cross itself
+     * 3. Start at waypoint 1
+     * 4. End at the last (highest-numbered) waypoint
+     * 5. Visit all numbered waypoints in correct order
+     * 6. Stay within bounds
+     * 7. Never overlap/cross itself
      *
      * Does NOT compare against a stored solution — any valid Hamiltonian
      * path through the waypoints is accepted.
@@ -320,7 +322,22 @@ class ZipGameController extends ApiController
             }
         }
 
-        // 3. Verify waypoints are visited in correct order
+        // 3. Path must start at waypoint 1
+        $firstCell = $path[0];
+        $firstWaypoint = collect($gridNumbers)->firstWhere('number', 1);
+        if ($firstCell[0] != $firstWaypoint['row'] || $firstCell[1] != $firstWaypoint['col']) {
+            return false;
+        }
+
+        // 4. Path must end at the last waypoint (the highest-numbered node)
+        $lastCell = $path[count($path) - 1];
+        $maxNumber = collect($gridNumbers)->max('number');
+        $lastWaypoint = collect($gridNumbers)->firstWhere('number', $maxNumber);
+        if ($lastCell[0] != $lastWaypoint['row'] || $lastCell[1] != $lastWaypoint['col']) {
+            return false;
+        }
+
+        // 5. Verify waypoints are visited in correct order
         $waypointIndex = 0;
         $sortedWaypoints = collect($gridNumbers)->sortBy('number')->values();
         foreach ($path as $i => $step) {
