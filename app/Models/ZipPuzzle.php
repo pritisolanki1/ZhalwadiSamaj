@@ -20,6 +20,8 @@ class ZipPuzzle extends Model
         'puzzle_date' => 'date',
     ];
 
+    const DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
     public function scopeToday($query)
     {
         return $query->whereDate('puzzle_date', today());
@@ -30,52 +32,52 @@ class ZipPuzzle extends Model
         return $this->hasMany(ZipGameResult::class, 'puzzle_id');
     }
 
+    // ========================================================================
+    //  PUBLIC GENERATOR
+    // ========================================================================
+
     public static function generateForDate($date)
     {
         $seed = crc32($date->format('Y-m-d'));
-        srand($seed);
+        mt_srand($seed);
 
         $dayOfMonth = (int) $date->format('j');
-
         $diffIndex = $dayOfMonth % 3;
 
         switch ($diffIndex) {
             case 0:
                 $difficulty = 'easy';
                 $size = 5;
-                $numWaypoints = rand(4, 6);
+                $numWaypoints = mt_rand(4, 6);
                 break;
             case 1:
                 $difficulty = 'medium';
                 $size = 6;
-                $numWaypoints = rand(7, 9);
+                $numWaypoints = mt_rand(7, 9);
                 break;
             default:
                 $difficulty = 'hard';
                 $size = 7;
-                $numWaypoints = rand(10, 14);
+                $numWaypoints = mt_rand(10, 14);
                 break;
         }
 
         $total = $size * $size;
-        if ($numWaypoints > $total) $numWaypoints = $total;
-
-        // 1. Generate a base snake path
-        $patternIndex = $dayOfMonth % 4;
-        switch ($patternIndex) {
-            case 0: $path = self::horizontalSnake($size, true); break;
-            case 1: $path = self::verticalSnake($size, true); break;
-            case 2: $path = self::horizontalSnake($size, false); break;
-            default: $path = self::verticalSnake($size, false); break;
+        if ($numWaypoints > $total) {
+            $numWaypoints = $total;
         }
 
-        // 2. Apply random 2-opt perturbations to create organic-looking paths
-        //    Higher difficulty = more perturbations = more complex path
-        $numPerturbations = $size * ($diffIndex + 1) * 2;
-        $path = self::perturbPath($path, $numPerturbations, $seed);
+        // 1. Generate a Hamiltonian path via randomized DFS with coiling bias.
+        //    Higher diffIndex = harder difficulty = more randomness in path.
+        $path = self::generateHamiltonianPath($size, mt_rand(), $diffIndex);
 
-        // 3. Place waypoints along the perturbed path
-        $waypointIndices = self::pickWaypoints($total, $numWaypoints);
+        // 2. Post-process with 2-opt perturbations to break up any remaining
+        //    linear interior segments and create structural detours.
+        $numPerturbations = $size * ($diffIndex + 1) * 4;
+        $path = self::perturbPath($path, $numPerturbations, mt_rand());
+
+        // 3. Place waypoints at random structural intervals.
+        $waypointIndices = self::pickStructuralWaypoints($total, $numWaypoints, mt_rand());
 
         $gridNumbers = [];
         foreach ($waypointIndices as $num => $idx) {
@@ -96,46 +98,201 @@ class ZipPuzzle extends Model
         ]);
     }
 
-    /**
-     * Apply 2-opt perturbations to a Hamiltonian path.
-     * Reverses random segments while maintaining adjacency at boundaries.
-     * This creates organic-looking paths that don't follow a simple pattern.
-     */
+    // ========================================================================
+    //  HAMILTONIAN PATH GENERATION  (randomized DFS  +  coiling bias)
+    // ========================================================================
+
+    public static function generateHamiltonianPath(int $size, int $seed, int $complexity = 1): array
+    {
+        mt_srand($seed);
+        $totalCells = $size * $size;
+        $maxAttempts = $size <= 5 ? 200 : ($size <= 6 ? 100 : 30);
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            $startRow = mt_rand(0, $size - 1);
+            $startCol = mt_rand(0, $size - 1);
+
+            $visited = array_fill(0, $size, array_fill(0, $size, false));
+            $path = [];
+
+            if (self::dfsCoil($path, $visited, $startRow, $startCol, $size, $complexity)) {
+                return $path;
+            }
+        }
+
+        return self::horizontalSnake($size, true);
+    }
+
+    private static function dfsCoil(array &$path, array &$visited, int $row, int $col, int $size, int $complexity): bool
+    {
+        $visited[$row][$col] = true;
+        $path[] = [$row, $col];
+
+        if (count($path) === $size * $size) {
+            return true;
+        }
+
+        $neighbors = self::getOrderedNeighbors($row, $col, $visited, $size, $complexity);
+
+        foreach ($neighbors as $n) {
+            if (self::dfsCoil($path, $visited, $n[0], $n[1], $size, $complexity)) {
+                return true;
+            }
+        }
+
+        array_pop($path);
+        $visited[$row][$col] = false;
+        return false;
+    }
+
+    private static function getOrderedNeighbors(int $row, int $col, array &$visited, int $size, int $complexity): array
+    {
+        $neighbors = [];
+
+        foreach (self::DIRS as $d) {
+            $nr = $row + $d[0];
+            $nc = $col + $d[1];
+
+            if ($nr < 0 || $nr >= $size || $nc < 0 || $nc >= $size || $visited[$nr][$nc]) {
+                continue;
+            }
+
+            $degree = 0;
+            $wallCount = 0;
+            foreach (self::DIRS as $d2) {
+                $nnr = $nr + $d2[0];
+                $nnc = $nc + $d2[1];
+                if ($nnr < 0 || $nnr >= $size || $nnc < 0 || $nnc >= $size) {
+                    $wallCount++;
+                } elseif (!$visited[$nnr][$nnc]) {
+                    $degree++;
+                }
+            }
+
+            $layer = min($nr, $nc, $size - 1 - $nr, $size - 1 - $nc);
+
+            $neighbors[] = [$nr, $nc, $degree, $wallCount, $layer];
+        }
+
+        usort($neighbors, function ($a, $b) {
+            $scoreA = $a[2] * 100000 - $a[3] * 1000 + $a[4];
+            $scoreB = $b[2] * 100000 - $b[3] * 1000 + $b[4];
+
+            if ($scoreA !== $scoreB) {
+                return $scoreA - $scoreB;
+            }
+
+            return mt_rand(-1, 1);
+        });
+
+        if ($complexity > 0 && count($neighbors) > 1) {
+            $numSwaps = min($complexity, count($neighbors) - 1);
+            for ($i = 0; $i < $numSwaps; $i++) {
+                $j = mt_rand($i, count($neighbors) - 1);
+                if ($i !== $j) {
+                    $tmp = $neighbors[$i];
+                    $neighbors[$i] = $neighbors[$j];
+                    $neighbors[$j] = $tmp;
+                }
+            }
+        }
+
+        return $neighbors;
+    }
+
+    // ========================================================================
+    //  2-OPT PERTURBATION  (post-processing for structural detours)
+    // ========================================================================
+
     public static function perturbPath(array $path, int $iterations, int $seed): array
     {
         $n = count($path);
-        if ($n < 4) return $path;
+        if ($n < 4) {
+            return $path;
+        }
 
-        srand($seed);
+        mt_srand($seed);
         $result = $path;
+        $applied = 0;
 
-        for ($attempt = 0; $attempt < $iterations * 3; $attempt++) {
-            $i = rand(1, $n - 3);
-            $j = rand($i + 2, min($i + 8, $n - 2));
+        for ($attempt = 0; $attempt < $iterations * 5 && $applied < $iterations; $attempt++) {
+            $i = mt_rand(1, $n - 3);
+            $maxJ = min($i + mt_rand(3, max(3, (int)($n * 0.35))), $n - 2);
+            $j = mt_rand($i + 2, $maxJ);
 
-            if ($j - $i < 2) continue;
+            if ($j - $i < 2) {
+                continue;
+            }
 
-            // Check if reversing segment [i..j] maintains adjacencies
-            // result[i-1] must be adjacent to result[j]
             $ri = $result[$i - 1];
             $rj = $result[$j];
-            if (abs($ri[0] - $rj[0]) + abs($ri[1] - $rj[1]) != 1) continue;
+            if (abs($ri[0] - $rj[0]) + abs($ri[1] - $rj[1]) !== 1) {
+                continue;
+            }
 
-            // result[i] must be adjacent to result[j+1]
             $ri2 = $result[$i];
             $rj2 = $result[$j + 1];
-            if (abs($ri2[0] - $rj2[0]) + abs($ri2[1] - $rj2[1]) != 1) continue;
+            if (abs($ri2[0] - $rj2[0]) + abs($ri2[1] - $rj2[1]) !== 1) {
+                continue;
+            }
 
-            // Valid 2-opt swap: reverse the segment
             $segment = array_slice($result, $i, $j - $i + 1);
             $reversed = array_reverse($segment);
             array_splice($result, $i, $j - $i + 1, $reversed);
+            $applied++;
         }
 
         return $result;
     }
 
-    public static function horizontalSnake($size, $startLeft = true)
+    // ========================================================================
+    //  STRUCTURAL WAYPOINT PLACEMENT  (random intervals with jitter)
+    // ========================================================================
+
+    private static function pickStructuralWaypoints(int $total, int $numWaypoints, int $seed): array
+    {
+        mt_srand($seed);
+
+        if ($numWaypoints <= 2) {
+            return $numWaypoints === 1 ? [0] : [0, $total - 1];
+        }
+
+        $remaining = $numWaypoints - 2;
+        if ($remaining <= 0) {
+            return [0, $total - 1];
+        }
+
+        $positions = [];
+        for ($i = 0; $i < $remaining; $i++) {
+            $segmentSize = ($total - 2) / $remaining;
+            $segmentStart = 1 + (int)($i * $segmentSize);
+            $segmentEnd = 1 + (int)(($i + 1) * $segmentSize) - 1;
+            if ($segmentEnd < $segmentStart) {
+                $segmentEnd = $segmentStart;
+            }
+            $positions[] = mt_rand($segmentStart, $segmentEnd);
+        }
+
+        $jitterAmount = max(1, (int)($total * 0.08));
+        foreach ($positions as $k => $pos) {
+            if (mt_rand(0, 100) < 40) {
+                $newPos = max(1, min($total - 2, $pos + mt_rand(-$jitterAmount, $jitterAmount)));
+                $positions[$k] = $newPos;
+            }
+        }
+
+        $indices = array_merge([0], $positions, [$total - 1]);
+        $indices = array_unique($indices);
+        sort($indices);
+
+        return array_values(array_slice($indices, 0, $numWaypoints));
+    }
+
+    // ========================================================================
+    //  SNAKE FALLBACKS
+    // ========================================================================
+
+    public static function horizontalSnake($size, $startLeft = true): array
     {
         $path = [];
         for ($row = 0; $row < $size; $row++) {
@@ -153,7 +310,7 @@ class ZipPuzzle extends Model
         return $path;
     }
 
-    public static function verticalSnake($size, $startTop = true)
+    public static function verticalSnake($size, $startTop = true): array
     {
         $path = [];
         for ($col = 0; $col < $size; $col++) {
@@ -169,24 +326,5 @@ class ZipPuzzle extends Model
             }
         }
         return $path;
-    }
-
-    private static function pickWaypoints(int $total, int $numWaypoints): array
-    {
-        if ($numWaypoints <= 2) {
-            return $numWaypoints === 1 ? [0] : [0, $total - 1];
-        }
-
-        $indices = [0];
-        $remaining = $numWaypoints - 2;
-        $step = ($total - 1) / ($numWaypoints - 1);
-        for ($i = 1; $i <= $remaining; $i++) {
-            $indices[] = min((int) round($i * $step), $total - 1);
-        }
-        $indices[] = $total - 1;
-
-        $indices = array_unique($indices);
-        sort($indices);
-        return array_values(array_slice($indices, 0, $numWaypoints));
     }
 }

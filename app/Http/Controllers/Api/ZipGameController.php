@@ -24,9 +24,12 @@ class ZipGameController extends ApiController
 
         $stats = $this->getUserStats($userId);
 
+        $grid = $this->buildGrid($puzzle->grid_size, $puzzle->grid_numbers);
+
         return $this->successResponse('Today\'s puzzle retrieved.', [
             'id' => $puzzle->id,
             'grid_size' => $puzzle->grid_size,
+            'grid' => $grid,
             'grid_numbers' => $puzzle->grid_numbers,
             'puzzle_date' => $puzzle->puzzle_date->format('Y-m-d'),
             'difficulty' => $puzzle->difficulty,
@@ -254,6 +257,19 @@ class ZipGameController extends ApiController
         }
 
         return $streak;
+    }
+
+    /**
+     * Build a full 2-D grid matrix from grid_numbers.
+     * Empty cells are 0; numbered waypoints are placed at their positions.
+     */
+    private function buildGrid(int $gridSize, array $gridNumbers): array
+    {
+        $grid = array_fill(0, $gridSize, array_fill(0, $gridSize, 0));
+        foreach ($gridNumbers as $gn) {
+            $grid[$gn['row']][$gn['col']] = $gn['number'];
+        }
+        return $grid;
     }
 
     /**
