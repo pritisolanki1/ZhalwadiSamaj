@@ -53,11 +53,14 @@ trait MemberTraits
             }
 
             $head_of_family_id = $value->id;
+            $head_of_family_gender = $value->gender;
             $head_of_family_father_id = $value->father_id;
             $head_of_family_mother_id = $value->mother_id;
             $head_of_family_grand_father_id = null;
             $head_of_family_grand_mother_id = null;
             $head_of_family_wife_id = '';
+            $head_of_family_husband_id = '';
+            $isFemaleHead = $head_of_family_gender === 'Female';
             //  Get Member List
             $iMemberList = Member::loadRelation()->where('head_of_the_family_id', $head_of_family_id)
                 // ->orderBy("name", "asc")
@@ -206,8 +209,137 @@ trait MemberTraits
                 }
             }
 
+            //  Female head: find husband and children by mother_id
+            if ($isFemaleHead) {
+                //  Find Husband (female head's father_id is her husband's ID)
+                if (!empty($head_of_family_father_id)) {
+                    foreach ($iMemberList as $iKeyH => $iMemberH) {
+                        if ($iMemberH->id == $head_of_family_father_id && $iMemberH->gender == 'Male') {
+                            $head_of_family_husband_id = $iMemberH->id;
+                            $iMemberH->relation_type = [
+                                'en' => 'Husband',
+                                'gu' => 'પતિ',
+                            ];
+                            $iFamily[] = $iMemberH;
+                            unset($iMemberList[$iKeyH]);
+                            break;
+                        }
+                    }
+                }
+
+                //  Find children by mother_id
+                $directMotherChildren = [];
+                foreach ($iMemberList as $iKey2 => $iMember2) {
+                    if ($iMember2->mother_id == $head_of_family_id) {
+                        if ($iMember2->gender == 'Male') {
+                            $iMember2->relation_type = [
+                                'en' => 'Son',
+                                'gu' => 'દીકરો',
+                            ];
+                            $sonId = $iMember2->id;
+                            $diLId = '';
+                            $iMember2Children = [];
+
+                            //  Find Daughter-in-law (wife of son)
+                            foreach ($iMemberList as $iKey3 => $iMember3) {
+                                if ($iMember3->relation_id == $sonId && $iMember3->gender == 'Female') {
+                                    $diLId = $iMember3->id;
+                                    $iMember3->relation_type = [
+                                        'en' => 'Daughter-in-law',
+                                        'gu' => 'પુત્રવધૂ',
+                                    ];
+                                    $iMember3Children = [];
+
+                                    //  Find Grandchildren
+                                    foreach ($iMemberList as $iKey4 => $iMember4) {
+                                        if ($iMember4->father_id == $sonId && (empty($diLId) || $iMember4->mother_id == $diLId)) {
+                                            if ($iMember4->gender == 'Male') {
+                                                $iMember4->relation_type = [
+                                                    'en' => 'Grandson',
+                                                    'gu' => 'પૌત્ર',
+                                                ];
+                                                $grandSonId = $iMember4->id;
+                                                $grandDiLId = '';
+                                                $iMember3Children[] = $iMember4;
+
+                                                //  Find Grand-daughter-in-law
+                                                foreach ($iMemberList as $iKey5 => $iMember5) {
+                                                    if ($iMember5->relation_id == $grandSonId && $iMember5->gender == 'Female') {
+                                                        $grandDiLId = $iMember5->id;
+                                                        $iMember5->relation_type = [
+                                                            'en' => 'Grand-daughter-in-law',
+                                                            'gu' => 'વહુ-વહુ',
+                                                        ];
+                                                        $iMember5Children = [];
+
+                                                        //  Find Great-grandchildren
+                                                        foreach ($iMemberList as $iKey6 => $iMember6) {
+                                                            if ($iMember6->father_id == $grandSonId && (empty($grandDiLId) || $iMember6->mother_id == $grandDiLId)) {
+                                                                if ($iMember6->gender == 'Male') {
+                                                                    $iMember6->relation_type = [
+                                                                        'en' => 'Great grandson',
+                                                                        'gu' => 'પ્રપૌત્ર',
+                                                                    ];
+                                                                    $iMember5Children[] = $iMember6;
+                                                                    unset($iMemberList[$iKey6]);
+                                                                } else {
+                                                                    if ($iMember6->gender == 'Female') {
+                                                                        $iMember6->relation_type = [
+                                                                            'en' => 'Great granddaughter',
+                                                                            'gu' => 'પપૌત્રી',
+                                                                        ];
+                                                                        $iMember5Children[] = $iMember6;
+                                                                        unset($iMemberList[$iKey6]);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        $iMember5->children = $iMember5Children;
+                                                        $iMember3Children[] = $iMember5;
+                                                        unset($iMemberList[$iKey5]);
+                                                    }
+                                                }
+                                                unset($iMemberList[$iKey4]);
+                                            } else {
+                                                if ($iMember4->gender == 'Female') {
+                                                    $iMember4->relation_type = [
+                                                        'en' => 'Granddaughter',
+                                                        'gu' => 'પૌત્રી',
+                                                    ];
+                                                    $iMember3Children[] = $iMember4;
+                                                    unset($iMemberList[$iKey4]);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    $iMember3->children = $iMember3Children;
+                                    $iMember2Children[] = $iMember3;
+                                    unset($iMemberList[$iKey3]);
+                                }
+                            }
+
+                            $iMember2->children = $iMember2Children;
+                            $directMotherChildren[] = $iMember2;
+                            unset($iMemberList[$iKey2]);
+                        } else {
+                            if ($iMember2->gender == 'Female') {
+                                $iMember2->relation_type = [
+                                    'en' => 'Daughter',
+                                    'gu' => 'દીકરી',
+                                ];
+                                $directMotherChildren[] = $iMember2;
+                                unset($iMemberList[$iKey2]);
+                            }
+                        }
+                    }
+                }
+                foreach ($directMotherChildren as $child) {
+                    $iFamily[] = $child;
+                }
+            }
+
             //  Fallback: When no wife/mother found, process children directly by father_id
-            if (empty($head_of_family_wife_id)) {
+            if (empty($head_of_family_wife_id) && !$isFemaleHead) {
                 $directFatherChildren = [];
                 foreach ($iMemberList as $iKey2 => $iMember2) {
                     if ($iMember2->father_id == $head_of_family_id) {
