@@ -29,8 +29,15 @@ class MemberController extends ApiController
 
                 $members = Member::loadRelation()
                     ->whereNull('head_of_the_family_id')
-                    ->orderByRaw('CAST(unique_number AS UNSIGNED) ASC')
-                    ->paginate($length);
+                    ->orderByRaw('CAST(unique_number AS UNSIGNED) ASC');
+
+                if ($request->filter_by_zone) {
+                    $members->whereHas('zone', function ($q) use ($request) {
+                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . strtolower($request->filter_by_zone) . '%']);
+                    });
+                }
+
+                $members = $members->paginate($length);
 
                 $members->getCollection()->transform(function ($value) {
                     if ($value->head_of_the_family_id == null) {

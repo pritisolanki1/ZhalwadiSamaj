@@ -209,6 +209,19 @@ trait MemberTraits
                 }
             }
 
+            //  Include deceased husband for female head (he may have different head_of_the_family_id)
+            if ($isFemaleHead && !empty($head_of_family_father_id)) {
+                $husbandExists = $iMemberList->contains(function ($member) use ($head_of_family_father_id) {
+                    return $member->id == $head_of_family_father_id;
+                });
+                if (!$husbandExists) {
+                    $husbandRecord = Member::loadRelation()->find($head_of_family_father_id);
+                    if ($husbandRecord && $husbandRecord->gender == 'Male') {
+                        $iMemberList->push($husbandRecord);
+                    }
+                }
+            }
+
             //  Female head: find husband and children by mother_id
             if ($isFemaleHead) {
                 //  Find Husband (female head's father_id is her husband's ID)
