@@ -266,6 +266,21 @@ class GeneralController extends ApiController
             $members->where('blood_group', $request->filter_by_blood_group);
         }
 
+        if ($request->filter_by_matrimonial) {
+            $members->where(function ($q) {
+                $q->where('relationShip_status', 'Single')
+                    ->orWhereNull('relationShip_status')
+                    ->orWhere('relationShip_status', '');
+            })
+            ->whereNull('expire_date')
+            ->whereNotNull('birth_date')
+            ->whereRaw('TIMESTAMPDIFF(YEAR, birth_date, CURDATE()) >= 18');
+        }
+
+        if ($request->filter_by_gender) {
+            $members->where('gender', $request->filter_by_gender);
+        }
+
         if ($request->filter_by_status || $request->filter_by_status == '0') {
             $members->where('status', $request->filter_by_status);
         }

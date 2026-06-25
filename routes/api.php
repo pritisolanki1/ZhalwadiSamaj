@@ -83,6 +83,7 @@ Route::group(['middleware' => 'auth:user-api,member-api'], function () {
             Route::post('/signup', [AuthController::class, 'signup']);
             Route::post('/delete', [AuthController::class, 'delete']);
             Route::get('/getAdminList', [AuthController::class, 'getAdminList']);
+            Route::post('/member/transfer-head-of-family', [MemberController::class, 'transferHeadOfFamily']);
             // Route::post('/setNewPasswordFromAdmin', [AuthController::class,'setNewPasswordFromAdmin']);
         });
 

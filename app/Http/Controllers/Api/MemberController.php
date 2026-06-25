@@ -286,6 +286,52 @@ class MemberController extends ApiController
         }
     }
 
+    public function transferHeadOfFamily(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'current_head_id' => 'required|exists:members,id',
+                'new_head_id'     => 'required|exists:members,id|different:current_head_id',
+            ]);
+
+            $currentHead = Member::findOrFail($request->current_head_id);
+            $newHead = Member::findOrFail($request->new_head_id);
+
+            if ($currentHead->head_of_the_family_id !== null && $currentHead->head_of_the_family_id !== '') {
+                throw new Exception('Current member is not the head of the family.');
+            }
+
+            if ($newHead->head_of_the_family_id !== $currentHead->id) {
+                throw new Exception('New head must be a member of the same family.');
+            }
+
+            DB::beginTransaction();
+
+            Member::where('head_of_the_family_id', $currentHead->id)
+                ->update(['head_of_the_family_id' => $newHead->id]);
+
+            $newHeadUniqueNumber = $newHead->unique_number;
+            $newHead->head_of_the_family_id = null;
+            $newHead->unique_number = $currentHead->unique_number;
+            $newHead->save();
+
+            $currentHead->head_of_the_family_id = $newHead->id;
+            $currentHead->unique_number = $newHeadUniqueNumber;
+            $currentHead->save();
+
+            DB::commit();
+
+            return $this->successResponse('Head of family transferred successfully.', [
+                'old_head' => $currentHead->id,
+                'new_head' => $newHead->id,
+            ]);
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
     public function block_member(Request $request): JsonResponse
     {
         try {
