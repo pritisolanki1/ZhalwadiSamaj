@@ -405,12 +405,12 @@ class GeneralController extends ApiController
                 $reverseLike,
             ]);
         }
-        $members->orderBy('unique_number');
+        $members->orderBy('unique_number')->orderBy('id');
 
         if ($request->filter_by_expired_member || $request->filter_by_status || $request->filter_by_status == '0') {
-            $members = $members->get();
+            $members = $members->distinct()->get();
         } else {
-            $members = $members->paginate($length)->withQueryString();
+            $members = $members->distinct()->paginate($length)->withQueryString();
         }
 
         return MemberShortResource::collection($members);
