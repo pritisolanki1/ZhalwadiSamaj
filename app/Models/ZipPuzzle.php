@@ -69,7 +69,14 @@ class ZipPuzzle extends Model
 
         // 1. Generate a Hamiltonian path via randomized DFS with coiling bias.
         //    Higher diffIndex = harder difficulty = more randomness in path.
-        $path = self::generateHamiltonianPath($size, mt_rand(), $diffIndex);
+        $path = self::generateHamiltonianPath($size, mt_rand(), $diffIndex + 1);
+
+        // If DFS failed and returned a snake, apply extra aggressive perturbation
+        // to break up the overly regular snake pattern.
+        $snakeTortuosity = self::measureTortuosity(self::horizontalSnake($size));
+        if (self::measureTortuosity($path) <= $snakeTortuosity + 0.05) {
+            $path = self::perturbPath($path, $size * 30, mt_rand(), 0.85);
+        }
 
         // 2. Post-process with 2-opt perturbations — multiple passes with
         //    increasing segment caps to break up linear snake patterns.
@@ -93,7 +100,10 @@ class ZipPuzzle extends Model
         $waypointIndices = self::pickStrategicWaypoints($total, $numWaypoints, mt_rand(), $diffIndex);
 
         $gridNumbers = [];
+        $lastPathIdx = count($path) - 1;
         foreach ($waypointIndices as $num => $idx) {
+            // Safety clamp — ensure the index is always within the valid path range
+            $idx = min($lastPathIdx, max(0, $idx));
             $pos = $path[$idx];
             $gridNumbers[] = [
                 'row' => $pos[0],
@@ -119,8 +129,8 @@ class ZipPuzzle extends Model
     {
         mt_srand($seed);
 
-        $maxAttempts = $size <= 5 ? 200 : ($size <= 6 ? 100 : 10);
-        $maxBacktracks = $size <= 5 ? 10000 : ($size <= 6 ? 50000 : 200000);
+        $maxAttempts = $size <= 5 ? 200 : ($size <= 6 ? 100 : 50);
+        $maxBacktracks = $size <= 5 ? 10000 : ($size <= 6 ? 50000 : 300000);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             $startRow = mt_rand(0, $size - 1);
@@ -411,6 +421,14 @@ class ZipPuzzle extends Model
             }
         }
 
+        $waypoints = array_unique($waypoints);
+        sort($waypoints);
+
+        // Clamp all indices to valid range [0, total - 1] before returning
+        $maxIdx = $total - 1;
+        $waypoints = array_map(function ($wp) use ($maxIdx) {
+            return min($maxIdx, max(0, $wp));
+        }, $waypoints);
         $waypoints = array_unique($waypoints);
         sort($waypoints);
 
