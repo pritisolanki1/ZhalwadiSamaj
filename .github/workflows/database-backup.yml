@@ -2,8 +2,8 @@ name: MySQL Database Backup
 
 on:
   schedule:
-    # Every hour from 8 AM to 11 PM IST
-    - cron: '30 2-17 * * *'
+    # Every day at 7:00 AM IST
+    - cron: '30 1 * * *'
 
   workflow_dispatch:
 
@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout backup branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: db-backups
           fetch-depth: 0
