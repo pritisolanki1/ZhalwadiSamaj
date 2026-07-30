@@ -211,7 +211,7 @@ class ZipGameController extends ApiController
         $correctResults = $allResults->where('is_correct', true);
         $totalSolved = $correctResults->count();
 
-        $completionTimes = $correctResults->pluck('completion_time_seconds')->filter();
+        $completionTimes = $correctResults->pluck('completion_time_seconds')->filter(fn($v) => $v !== null);
 
         return [
             'total_played' => $totalPlayed,
