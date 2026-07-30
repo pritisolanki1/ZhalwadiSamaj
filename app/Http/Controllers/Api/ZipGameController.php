@@ -92,6 +92,7 @@ class ZipGameController extends ApiController
             'correct_solution' => $solutionPath,
             'completion_time_seconds' => $result->completion_time_seconds,
             'rank' => $rank,
+            'stats' => $this->getUserStats($userId),
         ]);
     }
 
