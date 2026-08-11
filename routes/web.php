@@ -19,6 +19,9 @@ Auth::routes();
 
 Route::get('/', [HomeController::class, 'index'])->name('index');
 
+Route::get('/privacy-policy', [HomeController::class, 'privacyPolicy'])->name('privacy-policy');
+Route::get('/child-safety', [HomeController::class, 'childSafety'])->name('child-safety');
+
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
 });

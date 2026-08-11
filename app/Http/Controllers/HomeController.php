@@ -25,6 +25,16 @@ class HomeController extends Controller
         return view('dashboard');
     }
 
+    public function privacyPolicy(): Factory|View|Application
+    {
+        return view('privacy-policy');
+    }
+
+    public function childSafety(): Factory|View|Application
+    {
+        return view('child-safety');
+    }
+
     public function getImage($width, $height, $path)
     {
         try {
