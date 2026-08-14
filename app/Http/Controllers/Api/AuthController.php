@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client as OClient;
 use Throwable;
 
@@ -496,10 +497,11 @@ class AuthController extends ApiController
                 'name_en',
             ])->where('phone', $request->phone)->first();
             UserForgotPasswordToken::where('forgot_user_id', $member->id)->delete();
+            $iToken = rand(10000000, 99999999);
             UserForgotPasswordToken::create([
                 'user_id' => $request->user_id,
                 'forgot_user_id' => $member->id,
-                'token' => rand(10000000, 99999999),
+                'token' => $iToken,
             ]);
 
             sendNotice(
@@ -509,7 +511,11 @@ class AuthController extends ApiController
                 $request->user_id ? explode(',', $request->user_id) : []
             );
 
-            return $this->successResponse('Member token generate successfully.');
+            return $this->successResponse('Member token generate successfully.', [
+                'token' => (string) $iToken,
+                'user_id' => $request->user_id,
+                'forgot_user_id' => $member->id,
+            ]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }
@@ -539,9 +545,9 @@ class AuthController extends ApiController
         try {
             $request->validate([
                 'phone' => 'required|existsWithOther:members,phone,status,1',
-                'token' => 'required|exists:user_forgot_password_tokens,token',
+                'token' => 'required|string',
                 'new_password' => 'required|digits:6',
-            ], ['token.exists' => 'Please enter valid token.']);
+            ]);
 
             $member = Member::select('members.id')->join('user_forgot_password_tokens', function ($join) {
                 $join->on('members.id', '=', 'user_forgot_password_tokens.forgot_user_id');
@@ -555,7 +561,7 @@ class AuthController extends ApiController
             )->first();
 
             if (!$member) {
-                throw new Exception('User Not Found');
+                return $this->errorResponse('Please enter valid token.', null, 422);
             }
 
             $member->password = Hash::make($request->new_password);
@@ -564,14 +570,17 @@ class AuthController extends ApiController
             UserForgotPasswordToken::where('forgot_user_id', $member->id)->delete();
 
             return $this->successResponse('User password update successfully.');
+        } catch (ValidationException $e) {
+            $firstKey = array_key_first($e->errors());
+
+            return $this->errorResponse($e->errors()[$firstKey][0], null, 422);
         } catch (Exception $e) {
-            if (!empty($e->errors())) {
-                foreach ($e->errors() as $key => $value) {
-                    return $this->errorResponse($value[0]);
-                }
-            } else {
-                return $this->errorResponse($e->getMessage());
-            }
+            Log::error('setNewPasswordForUser failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return $this->errorResponse('Password update failed. Please try again.', null, 500);
         }
     }
 
