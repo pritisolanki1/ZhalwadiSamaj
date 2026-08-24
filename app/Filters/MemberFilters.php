@@ -23,31 +23,32 @@ class MemberFilters extends Filters
 
     protected function search_type($type)
     {
+        //  Phase-1 note: members last saved by old app builds carry ''
+        //  instead of NULL in relationship columns, so every branch below
+        //  must treat NULL and '' alike.
         if ($type == 'father') {
             $childMembers = $this->getChildMembers($this->request->member_id);
             $this->builder
                 ->where('members.gender', 'Male')
-                ->whereNull('members.relation_id')
-                ->whereNotNull('members2.id')
-                ->whereNotIn('members.id', $childMembers)
-                ->leftJoin('members AS members2', function ($join) {
-                    $join->on('members2.relation_id', '=', 'members.id');
+                ->where(function ($q) {
+                    $q->whereNull('members.relation_id')->orWhere('members.relation_id', '');
                 })
+                ->whereNotIn('members.id', $childMembers)
                 ->select('members.*');
         } elseif ($type == 'mother') {
             $this->builder
                 ->where('members.gender', 'Female')
-                ->whereNotNull('relation_id');
+                ->where(function ($q) {
+                    $q->whereNotNull('relation_id')->orWhere('relation_id', '');
+                });
         } elseif ($type == 'husband') {
             $childMembers = $this->getChildMembers($this->request->member_id);
             $this->builder
                 ->where('members.gender', 'Male')
-                ->whereNull('members.relation_id')
-                ->whereNotNull('members2.id')
-                ->whereNotIn('members.id', $childMembers)
-                ->leftJoin('members AS members2', function ($join) {
-                    $join->on('members2.relation_id', '!=', 'members.id');
+                ->where(function ($q) {
+                    $q->whereNull('members.relation_id')->orWhere('members.relation_id', '');
                 })
+                ->whereNotIn('members.id', $childMembers)
                 ->select('members.*');
         }
     }

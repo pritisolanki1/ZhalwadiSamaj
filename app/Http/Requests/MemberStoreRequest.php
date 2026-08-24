@@ -12,6 +12,29 @@ class MemberStoreRequest extends BaseFormRequest
         return true;
     }
 
+    /**
+     * Legacy Android builds submit untouched relationship fields as empty
+     * strings. Normalizing them to null here keeps those payloads valid and
+     * stops '' from being written straight into uuid columns.
+     */
+    public function prepareForValidation(): void
+    {
+        $relationshipFields = ['relation_id', 'father_id', 'mother_id', 'head_of_the_family_id'];
+
+        $normalized = [];
+        foreach ($relationshipFields as $field) {
+            if (array_key_exists($field, $this->all())
+                && is_string($this->input($field))
+                && trim($this->input($field)) === '') {
+                $normalized[$field] = null;
+            }
+        }
+
+        if ($normalized !== []) {
+            $this->merge($normalized);
+        }
+    }
+
     public function rules(): array
     {
         $isHeadOfFamily = $this->isHeadOfFamilyMember();
@@ -81,6 +104,15 @@ class MemberStoreRequest extends BaseFormRequest
             'kuldevi_id'      => 'filled|exists:kuldevis,id',
             'zone_id'         => 'filled|exists:zones,id',
             'native_place_id' => 'filled|exists:native_places,id',
+
+            //  Phase-1 relationship protection: relationship references must point
+            //  at real members. Legacy clients send empty strings for untouched
+            //  fields; prepareForValidation() normalizes those to null so they
+            //  skip this rule instead of failing the whole request.
+            'relation_id'           => ['sometimes', 'nullable', Rule::exists('members', 'id')],
+            'father_id'             => ['sometimes', 'nullable', Rule::exists('members', 'id')],
+            'mother_id'             => ['sometimes', 'nullable', Rule::exists('members', 'id')],
+            'head_of_the_family_id' => ['sometimes', 'nullable', Rule::exists('members', 'id')],
             'is_private'      => 'boolean',
             'status'          => [
                 Rule::in([

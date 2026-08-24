@@ -209,13 +209,17 @@ trait MemberTraits
                 }
             }
 
-            //  Include deceased husband for female head (he may have different head_of_the_family_id)
-            if ($isFemaleHead && !empty($head_of_family_father_id)) {
-                $husbandExists = $iMemberList->contains(function ($member) use ($head_of_family_father_id) {
-                    return $member->id == $head_of_family_father_id;
+            //  Include deceased husband for female head (he may have different head_of_the_family_id).
+            //  Phase-1 fix: her husband is whoever she points at via relation_id
+            //  (wife.relation_id = husband.id); father_id is her real parent.
+            $head_of_family_husband_id = '';
+            if ($isFemaleHead && !empty($value->relation_id)) {
+                $head_of_family_husband_id = $value->relation_id;
+                $husbandExists = $iMemberList->contains(function ($member) use ($head_of_family_husband_id) {
+                    return $member->id == $head_of_family_husband_id;
                 });
                 if (!$husbandExists) {
-                    $husbandRecord = Member::loadRelation()->find($head_of_family_father_id);
+                    $husbandRecord = Member::loadRelation()->find($head_of_family_husband_id);
                     if ($husbandRecord && $husbandRecord->gender == 'Male') {
                         $iMemberList->push($husbandRecord);
                     }
@@ -224,11 +228,10 @@ trait MemberTraits
 
             //  Female head: find husband and children by mother_id
             if ($isFemaleHead) {
-                //  Find Husband (female head's father_id is her husband's ID)
-                if (!empty($head_of_family_father_id)) {
+                //  Find Husband via wife.relation_id = husband.id
+                if (!empty($head_of_family_husband_id)) {
                     foreach ($iMemberList as $iKeyH => $iMemberH) {
-                        if ($iMemberH->id == $head_of_family_father_id && $iMemberH->gender == 'Male') {
-                            $head_of_family_husband_id = $iMemberH->id;
+                        if ($iMemberH->id == $head_of_family_husband_id && $iMemberH->gender == 'Male') {
                             $iMemberH->relation_type = [
                                 'en' => 'Husband',
                                 'gu' => 'પતિ',

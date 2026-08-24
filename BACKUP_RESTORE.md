@@ -82,10 +82,10 @@ Example:
 
 ```bash
 mysql \
--h 65.xxx.xxx.xxx \
+-h localhost \
 -P 3306 \
 -u root \
--p family_db < backup-2026-06-21-10-30.sql
+-p family_restore < backup-2026-08-24-02-46.sql
 ```
 
 ---

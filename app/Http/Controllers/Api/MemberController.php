@@ -89,7 +89,7 @@ class MemberController extends ApiController
         DB::beginTransaction();
         try {
             $request->validated();
-            $iInsertFiled = $request->all();
+            $iInsertFiled = $this->applyFamilyZoneOnStore($request->all());
             $iInsertFiled['name_en'] = $iInsertFiled['name']['en'];
             $iInsertFiled['status'] = 1;
             $member = Member::create($iInsertFiled)->assignRole('Member');
@@ -160,12 +160,13 @@ class MemberController extends ApiController
     {
         DB::beginTransaction();
         try {
-            if (!Member::find($id)) {
+            $iMember = Member::find($id);
+            if (!$iMember) {
                 throw new Exception('Member not found');
             }
             $request->validated();
             //dd($request->all("avatar"));
-            $updatedFiled = $request->all();
+            $updatedFiled = $this->protectRelationshipIds($iMember, $request->all());
             $updatedFiled['name_en'] = $updatedFiled['name']['en'];
             $updatedFiled['birth_date'] = $updatedFiled['birth_date'] == null ? null : date_format(
                 date_create($updatedFiled['birth_date']),
@@ -180,7 +181,36 @@ class MemberController extends ApiController
             if ($updatedFiled['avatar'] != '') {
                 unset($updatedFiled['avatar']);
             }
-            Member::find($id)->fill($updatedFiled)->save();
+
+            // Family Zone rule: a family has exactly one Zone - the current head's.
+            // A non-head member always persists with the CURRENT head's zone, so a
+            // stale client snapshot can never pull a member out of the family Zone.
+            $originalZoneId = $iMember->zone_id;
+            $effectiveHeadId = array_key_exists('head_of_the_family_id', $updatedFiled)
+                ? trim((string)$updatedFiled['head_of_the_family_id'])
+                : trim((string)$iMember->head_of_the_family_id);
+            $isHeadMember = $effectiveHeadId === '';
+            if (!$isHeadMember) {
+                $familyHead = Member::find($effectiveHeadId);
+                if ($familyHead && !empty($familyHead->zone_id)) {
+                    $updatedFiled['zone_id'] = $familyHead->zone_id;
+                } else {
+                    // Head has no zone yet: the member cannot lead the family Zone.
+                    unset($updatedFiled['zone_id']);
+                }
+            }
+
+            $iMember->fill($updatedFiled)->save();
+
+            // The head defines the family Zone: propagate an intentional Zone change
+            // to every current member of the family.
+            if ($isHeadMember
+                && array_key_exists('zone_id', $updatedFiled)
+                && !empty($updatedFiled['zone_id'])
+                && $updatedFiled['zone_id'] !== $originalZoneId) {
+                Member::where('head_of_the_family_id', $iMember->id)
+                    ->update(['zone_id' => $updatedFiled['zone_id']]);
+            }
 
             $iRes = Member::find($id);
 
@@ -192,6 +222,105 @@ class MemberController extends ApiController
 
             return $this->errorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Family Zone rule on create: a new member joining an existing family
+     * (non-empty head_of_the_family_id) always lands in the current head's
+     * Zone, regardless of what the client submitted. Members created as
+     * their own head keep the submitted (validated) Zone.
+     */
+    private function applyFamilyZoneOnStore(array $fields): array
+    {
+        $headId = trim((string)($fields['head_of_the_family_id'] ?? ''));
+        if ($headId === '') {
+            return $fields;
+        }
+
+        $familyHead = Member::find($headId);
+        if ($familyHead && !empty($familyHead->zone_id)) {
+            $fields['zone_id'] = $familyHead->zone_id;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Legacy Android builds submit untouched relationship fields as empty
+     * values, and fill() would happily wipe the stored links with them.
+     * An empty value only clears an existing relationship when the rest of
+     * the payload expresses that intent, mirroring the app's own UI:
+     *  - relation_id: the husband picker is visible for Married/Widow females,
+     *    so an empty spouse id together with such a status means the picker
+     *    simply failed to load -> keep the stored link. Any other status
+     *    hides the picker, making an empty id a deliberate removal.
+     *  - father_id/mother_id: the matching denormalised name travels along;
+     *    if that name is unchanged the field was never loaded -> keep it.
+     *    A changed or cleared name is a deliberate detach.
+     *  - head_of_the_family_id: ownership changes only through the dedicated
+     *    transfer endpoint, so an empty value never clears it.
+     */
+    private function protectRelationshipIds(Member $member, array $fields): array
+    {
+        foreach (['relation_id', 'father_id', 'mother_id', 'head_of_the_family_id'] as $field) {
+            if (!array_key_exists($field, $fields)) {
+                continue;
+            }
+
+            $value = $fields[$field];
+            $isEmpty = $value === null || (is_string($value) && trim($value) === '');
+            if (!$isEmpty) {
+                continue;
+            }
+
+            if ($field === 'relation_id'
+                && isset($fields['relationShip_status'])
+                && in_array($fields['relationShip_status'], ['Married', 'Widow'], true)) {
+                unset($fields[$field]);
+                continue;
+            }
+
+            if (in_array($field, ['father_id', 'mother_id'], true)) {
+                $nameField = $field === 'father_id' ? 'father_name' : 'mother_name';
+                if ($this->denormalizedNameUnchanged($member->{$nameField}, $fields[$nameField] ?? null)) {
+                    unset($fields[$field]);
+                    continue;
+                }
+            }
+
+            if ($field === 'head_of_the_family_id') {
+                unset($fields[$field]);
+                continue;
+            }
+
+            // Deliberate removal: write a clean NULL instead of ''.
+            $fields[$field] = null;
+        }
+
+        return $fields;
+    }
+
+    /**
+     * True when the incoming denormalised name equals the stored one
+     * (both sides normalised: missing keys, '' and literal "null" strings
+     * sent by the app all count as absent).
+     */
+    private function denormalizedNameUnchanged($storedName, $incomingName): bool
+    {
+        $normalize = function ($name) {
+            if (!is_array($name)) {
+                return [null, null];
+            }
+
+            return [
+                isset($name['en']) && is_string($name['en']) && trim($name['en']) !== '' && $name['en'] !== 'null'
+                    ? trim($name['en']) : null,
+                isset($name['gu']) && is_string($name['gu']) && trim($name['gu']) !== '' && $name['gu'] !== 'null'
+                    ? trim($name['gu']) : null,
+            ];
+        };
+
+        return $normalize($storedName) === $normalize($incomingName);
     }
 
     public function destroy($id): JsonResponse
@@ -325,6 +454,16 @@ class MemberController extends ApiController
             $currentHead->head_of_the_family_id = $newHead->id;
             $currentHead->unique_number = $newHeadUniqueNumber;
             $currentHead->save();
+
+            // Family Zone rule: the NEW/current head's Zone is authoritative for
+            // the whole family. Synchronize everyone inside this same transaction
+            // so no intermediate mixed-Zone state is ever committed. When the new
+            // head has no Zone yet there is nothing authoritative to sync to, so
+            // Zones are left untouched (never invented here).
+            if (!empty($newHead->zone_id)) {
+                Member::where('head_of_the_family_id', $newHead->id)
+                    ->update(['zone_id' => $newHead->zone_id]);
+            }
 
             DB::commit();
 
