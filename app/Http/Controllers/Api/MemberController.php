@@ -517,7 +517,7 @@ class MemberController extends ApiController
             'head_of_the_family_id' => ['filled', 'uuid', 'exists:members,id'],
             'member_id'             => ['filled', 'uuid', 'exists:members,id'],
             'search_type'           => ['required', 'in:father,mother,husband'],
-            'relation_id'           => ['required_if:search_type,==,mother', 'uuid'],
+            'relation_id'           => ['sometimes', 'uuid'],
         ]);
 
         $filters = new MemberFilters($request);

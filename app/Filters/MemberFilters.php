@@ -36,11 +36,20 @@ class MemberFilters extends Filters
                 ->whereNotIn('members.id', $childMembers)
                 ->select('members.*');
         } elseif ($type == 'mother') {
-            $this->builder
-                ->where('members.gender', 'Female')
-                ->where(function ($q) {
-                    $q->whereNotNull('relation_id')->orWhere('relation_id', '');
-                });
+            if ($this->request->filled('relation_id')) {
+                // Wife lookup (getwifeCorrospondToHusband): relation_id filter handles matching.
+                $this->builder->where('members.gender', 'Female');
+            } else {
+                // Independent mother picker: show eligible females, exclude self/descendants.
+                $childMembers = $this->getChildMembers($this->request->member_id);
+                $this->builder
+                    ->where('members.gender', 'Female')
+                    ->where(function ($q) {
+                        $q->whereNull('members.relation_id')->orWhere('members.relation_id', '');
+                    })
+                    ->whereNotIn('members.id', $childMembers)
+                    ->select('members.*');
+            }
         } elseif ($type == 'husband') {
             $childMembers = $this->getChildMembers($this->request->member_id);
             $this->builder
