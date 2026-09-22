@@ -23,6 +23,14 @@ class Kernel extends ConsoleKernel
         $schedule->command('backup:clean --disable-notifications')->daily()->at('01:00');
         $schedule->command('backup:run --disable-notifications')->daily()->at('01:30');
         $schedule->command('telescope:prune --hours=48')->daily();
+
+        // Daily Zip Puzzle challenge reminder. Time is configurable via
+        // config('zip.daily_reminder_time') / ZIP_DAILY_REMINDER_TIME env
+        // (24-hour "H:i", server timezone - currently UTC).
+        $schedule->command('zip:send-daily-reminders')
+            ->withoutOverlapping()
+            ->daily()
+            ->at(config('zip.daily_reminder_time'));
     }
 
     /**
