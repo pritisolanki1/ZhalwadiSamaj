@@ -41,3 +41,6 @@ public/image/Job/avatar/*
 image/
 .rnd
 public/docs/api-docs.json
+.idea/
+_ide_helper.php
+.php-cs-fixer.cache
